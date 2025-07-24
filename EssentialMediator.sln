@@ -1,0 +1,53 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.36105.23
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{955AF1B9-EAE2-4245-A1A1-B2CE549E7B44}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EssentialMediator.Abstractions", "src\EssentialMediator.Abstractions\EssentialMediator.Abstractions.csproj", "{CC57F8EF-D71D-4AB7-BEF5-113FA45FD6B7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EssentialMediator", "src\EssentialMediator\EssentialMediator.csproj", "{D5A03A89-332B-49FD-A375-0DF90A09C384}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EssentialMediator.Tests", "tests\EssentialMediator.Tests\EssentialMediator.Tests.csproj", "{1F1F863C-2100-497C-BC74-4E2CCE16A9D6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EssentialMediator.Extensions.DependencyInjection", "src\EssentialMediator.Extensions.DependencyInjection\EssentialMediator.Extensions.DependencyInjection.csproj", "{3D929064-75FC-46D2-9C9A-1F091AEBE1C8}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CC57F8EF-D71D-4AB7-BEF5-113FA45FD6B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC57F8EF-D71D-4AB7-BEF5-113FA45FD6B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC57F8EF-D71D-4AB7-BEF5-113FA45FD6B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC57F8EF-D71D-4AB7-BEF5-113FA45FD6B7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D5A03A89-332B-49FD-A375-0DF90A09C384}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5A03A89-332B-49FD-A375-0DF90A09C384}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5A03A89-332B-49FD-A375-0DF90A09C384}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5A03A89-332B-49FD-A375-0DF90A09C384}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1F1F863C-2100-497C-BC74-4E2CCE16A9D6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1F1F863C-2100-497C-BC74-4E2CCE16A9D6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1F1F863C-2100-497C-BC74-4E2CCE16A9D6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1F1F863C-2100-497C-BC74-4E2CCE16A9D6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3D929064-75FC-46D2-9C9A-1F091AEBE1C8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3D929064-75FC-46D2-9C9A-1F091AEBE1C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3D929064-75FC-46D2-9C9A-1F091AEBE1C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3D929064-75FC-46D2-9C9A-1F091AEBE1C8}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{CC57F8EF-D71D-4AB7-BEF5-113FA45FD6B7} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{D5A03A89-332B-49FD-A375-0DF90A09C384} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{1F1F863C-2100-497C-BC74-4E2CCE16A9D6} = {955AF1B9-EAE2-4245-A1A1-B2CE549E7B44}
+		{3D929064-75FC-46D2-9C9A-1F091AEBE1C8} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {62E1B7E9-D915-4172-AE5B-D25FC994750E}
+	EndGlobalSection
+EndGlobal
