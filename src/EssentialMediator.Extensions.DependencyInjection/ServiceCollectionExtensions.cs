@@ -1,9 +1,9 @@
-﻿using System.Reflection;
-using EssentialMediator.Abstractions.Handlers;
+﻿using EssentialMediator.Abstractions.Handlers;
+using EssentialMediator.Abstractions.Pipelines;
 using EssentialMediator.Extensions.DependencyInjection.Configuration;
 using EssentialMediator.Mediation;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using System.Reflection;
 
 namespace EssentialMediator.Extensions;
 
@@ -64,7 +64,6 @@ public static class ServiceCollectionExtensions
     /// </summary>
     private static IServiceCollection AddEssentialMediatorCore(IServiceCollection services, Assembly[] assemblies, ServiceLifetime serviceLifetime)
     {
-        // Register the mediator with specified lifetime
         switch (serviceLifetime)
         {
             case ServiceLifetime.Singleton:
@@ -74,18 +73,17 @@ public static class ServiceCollectionExtensions
                 services.AddTransient<IMediator, Mediator>();
                 break;
             case ServiceLifetime.Scoped:
+                services.AddScoped<IMediator, Mediator>();
+                break;
             default:
                 services.AddScoped<IMediator, Mediator>();
                 break;
         }
 
-        // Use HashSet to avoid duplicate assemblies
         var uniqueAssemblies = new HashSet<Assembly>(assemblies);
 
         foreach (var assembly in uniqueAssemblies)
-        {
             RegisterHandlers(services, assembly, serviceLifetime);
-        }
 
         return services;
     }
@@ -98,15 +96,11 @@ public static class ServiceCollectionExtensions
                 .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
                 .ToList();
 
-            // Register request handlers
             RegisterRequestHandlers(services, handlerTypes, serviceLifetime);
-
-            // Register notification handlers  
             RegisterNotificationHandlers(services, handlerTypes, serviceLifetime);
         }
         catch (ReflectionTypeLoadException ex)
         {
-            // Handle assembly loading issues gracefully
             var loadableTypes = ex.Types.Where(t => t != null).Cast<Type>().ToList();
             if (loadableTypes.Any())
             {
@@ -133,7 +127,6 @@ public static class ServiceCollectionExtensions
             }
             catch (Exception)
             {
-                // Skip types that can't be processed
                 continue;
             }
         }
@@ -175,11 +168,149 @@ public static class ServiceCollectionExtensions
                 services.AddTransient(serviceType, implementationType);
                 break;
             case ServiceLifetime.Scoped:
+                services.AddScoped(serviceType, implementationType); 
+                break;
             default:
                 services.AddScoped(serviceType, implementationType);
                 break;
         }
     }
+
+    #region Pipeline Behavior Extensions
+
+    /// <summary>
+    /// Adds a pipeline behavior to the service collection
+    /// </summary>
+    /// <typeparam name="TBehavior">The type of behavior to add</typeparam>
+    /// <param name="services">The service collection</param>
+    /// <param name="serviceLifetime">The service lifetime for the behavior</param>
+    /// <returns>The service collection for chaining</returns>
+    public static IServiceCollection AddPipelineBehavior<TBehavior>(this IServiceCollection services, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
+        where TBehavior : class
+    {
+        return AddPipelineBehavior(services, typeof(TBehavior), serviceLifetime);
+    }
+
+    /// <summary>
+    /// Adds a pipeline behavior to the service collection
+    /// </summary>
+    /// <param name="services">The service collection</param>
+    /// <param name="behaviorType">The type of behavior to add</param>
+    /// <param name="serviceLifetime">The service lifetime for the behavior</param>
+    /// <returns>The service collection for chaining</returns>
+    public static IServiceCollection AddPipelineBehavior(this IServiceCollection services, Type behaviorType, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(behaviorType);
+
+        var behaviorInterfaces = behaviorType.GetInterfaces()
+            .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IPipelineBehavior<,>))
+            .ToList();
+
+        if (!behaviorInterfaces.Any())
+            throw new ArgumentException($"Type {behaviorType.Name} does not implement IPipelineBehavior<,>", nameof(behaviorType));
+
+        foreach (var behaviorInterface in behaviorInterfaces)
+            RegisterService(services, behaviorInterface, behaviorType, serviceLifetime);
+
+        return services;
+    }
+
+    /// <summary>
+    /// Adds built-in logging behavior
+    /// </summary>
+    /// <param name="services">The service collection</param>
+    /// <param name="serviceLifetime">The service lifetime for the behavior</param>
+    /// <returns>The service collection for chaining</returns>
+    public static IServiceCollection AddLoggingBehavior(this IServiceCollection services, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
+    {
+        switch (serviceLifetime)
+        {
+            case ServiceLifetime.Singleton:
+                services.AddSingleton(typeof(IPipelineBehavior<,>), typeof(EssentialMediator.Behaviors.LoggingBehavior<,>));
+                break;
+            case ServiceLifetime.Transient:
+                services.AddTransient(typeof(IPipelineBehavior<,>), typeof(EssentialMediator.Behaviors.LoggingBehavior<,>));
+                break;
+            case ServiceLifetime.Scoped:
+                services.AddScoped(typeof(IPipelineBehavior<,>), typeof(EssentialMediator.Behaviors.LoggingBehavior<,>));
+                break;
+            default:
+                services.AddScoped(typeof(IPipelineBehavior<,>), typeof(EssentialMediator.Behaviors.LoggingBehavior<,>));
+                break;
+        }
+        return services;
+    }
+
+    /// <summary>
+    /// Adds built-in performance monitoring behavior
+    /// </summary>
+    /// <param name="services">The service collection</param>
+    /// <param name="slowRequestThresholdMs">Threshold in milliseconds for considering a request slow</param>
+    /// <param name="serviceLifetime">The service lifetime for the behavior</param>
+    /// <returns>The service collection for chaining</returns>
+    public static IServiceCollection AddPerformanceBehavior(this IServiceCollection services, int slowRequestThresholdMs = 500, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
+    {
+        switch (serviceLifetime)
+        {
+            case ServiceLifetime.Singleton:
+                services.AddSingleton(typeof(IPipelineBehavior<,>), typeof(EssentialMediator.Behaviors.PerformanceBehavior<,>));
+                break;
+            case ServiceLifetime.Transient:
+                services.AddTransient(typeof(IPipelineBehavior<,>), typeof(EssentialMediator.Behaviors.PerformanceBehavior<,>));
+                break;
+            case ServiceLifetime.Scoped:
+                services.AddScoped(typeof(IPipelineBehavior<,>), typeof(EssentialMediator.Behaviors.PerformanceBehavior<,>));
+                break;
+            default:
+                services.AddScoped(typeof(IPipelineBehavior<,>), typeof(EssentialMediator.Behaviors.PerformanceBehavior<,>));
+                break;
+        }
+        return services;
+    }
+
+    /// <summary>
+    /// Adds built-in validation behavior
+    /// </summary>
+    /// <param name="services">The service collection</param>
+    /// <param name="serviceLifetime">The service lifetime for the behavior</param>
+    /// <returns>The service collection for chaining</returns>
+    public static IServiceCollection AddValidationBehavior(this IServiceCollection services, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
+    {
+        switch (serviceLifetime)
+        {
+            case ServiceLifetime.Singleton:
+                services.AddSingleton(typeof(IPipelineBehavior<,>), typeof(EssentialMediator.Behaviors.ValidationBehavior<,>));
+                break;
+            case ServiceLifetime.Transient:
+                services.AddTransient(typeof(IPipelineBehavior<,>), typeof(EssentialMediator.Behaviors.ValidationBehavior<,>));
+                break;
+            case ServiceLifetime.Scoped:
+                services.AddScoped(typeof(IPipelineBehavior<,>), typeof(EssentialMediator.Behaviors.ValidationBehavior<,>));
+                break;
+            default:
+                services.AddScoped(typeof(IPipelineBehavior<,>), typeof(EssentialMediator.Behaviors.ValidationBehavior<,>));
+                break;
+        }
+        return services;
+    }
+
+    /// <summary>
+    /// Adds all built-in behaviors (Logging, Performance, Validation)
+    /// </summary>
+    /// <param name="services">The service collection</param>
+    /// <param name="slowRequestThresholdMs">Threshold in milliseconds for performance monitoring</param>
+    /// <param name="serviceLifetime">The service lifetime for behaviors</param>
+    /// <returns>The service collection for chaining</returns>
+    public static IServiceCollection AddAllBuiltInBehaviors(this IServiceCollection services, int slowRequestThresholdMs = 500, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
+    {
+        return services
+            .AddLoggingBehavior(serviceLifetime)
+            .AddPerformanceBehavior(slowRequestThresholdMs, serviceLifetime)
+            .AddValidationBehavior(serviceLifetime);
+    }
+
+    #endregion
 }
 
 
