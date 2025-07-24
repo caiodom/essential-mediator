@@ -1,0 +1,116 @@
+# EssentialMediator WebAPI Demo – API Tests
+# Use this file to test all features
+# Execute the requests in order to observe the full flow
+
+### Health Check – Verify that the mediator is working
+GET http://localhost:5000/api/users/health
+
+### 1. List users (seed data) – Query Pattern + Performance Behavior
+GET http://localhost:5000/api/users
+
+### 2. Get user by ID – Query Pattern + Validation Behavior
+GET http://localhost:5000/api/users/1
+
+### 3. Create new user – Command Pattern + Validation + Notifications
+POST http://localhost:5000/api/users
+Content-Type: application/json
+
+{
+  "name": "Ana Costa",
+  "email": "ana.costa@email.com"
+}
+
+### 4. Create user with invalid data – Validation Behavior Test
+POST http://localhost:5000/api/users
+Content-Type: application/json
+
+{
+  "name": "",
+  "email": "invalid-email"
+}
+
+### 5. Create user with duplicate email – Business Logic Test
+POST http://localhost:5000/api/users
+Content-Type: application/json
+
+{
+  "name": "João Duplicado",
+  "email": "joao@email.com"
+}
+
+### 6. List users filtered by active status – Query Pattern
+GET http://localhost:5000/api/users?isActive=true
+
+### 7. Search users by term – Query Pattern
+GET http://localhost:5000/api/users?searchTerm=Maria
+
+### 8. Search users with multiple filters – Query Pattern
+GET http://localhost:5000/api/users?isActive=true&searchTerm=Silva
+
+### 9. Update user – Command Pattern + Notifications
+PUT http://localhost:5000/api/users/2
+Content-Type: application/json
+
+{
+  "name": "Maria Santos Silva",
+  "email": "maria.silva@email.com",
+  "isActive": true
+}
+
+### 10. Attempt to update a non‑existent user – Error Handling
+PUT http://localhost:5000/api/users/999
+Content-Type: application/json
+
+{
+  "name": "Nonexistent User",
+  "email": "inexistent@email.com",
+  "isActive": true
+}
+
+### 11. Get non‑existent user – Error Handling
+GET http://localhost:5000/api/users/999
+
+### 12. Get user with invalid ID – Validation Test
+GET http://localhost:5000/api/users/0
+
+### 13. Delete user – Void Command Pattern + Notifications
+DELETE http://localhost:5000/api/users/3
+
+### 14. Attempt to delete a non‑existent user – Error Handling
+DELETE http://localhost:5000/api/users/999
+
+### 15. Final state check – Query Pattern
+GET http://localhost:5000/api/users
+
+###
+### PERFORMANCE BEHAVIOR TESTS
+### Run multiple times to see performance logs
+###
+
+### Performance Test 1 – Multiple queries
+GET http://localhost:5000/api/users
+GET http://localhost:5000/api/users
+GET http://localhost:5000/api/users
+
+### Performance Test 2 – Simulated heavy operations (delays)
+POST http://localhost:5000/api/users
+Content-Type: application/json
+
+{
+  "name": "Performance Test User",
+  "email": "performance@email.com"
+}
+
+###
+### NOTIFICATION PATTERN TESTS
+### Observe in the logs how multiple handlers execute
+###
+
+### Notification Test – Creation (Email + Audit Log)
+POST http://localhost:5000/api/users
+Content-Type: application/json
+
+{
+  "name": "Notifications Test User",
+  "email": "notifications@email.com"
+}
