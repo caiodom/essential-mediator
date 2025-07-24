@@ -1,20 +1,24 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using System.Reflection;
-using EssentialMediator.Exceptions;
-using EssentialMediator.Abstractions.Handlers;
+﻿using EssentialMediator.Abstractions.Handlers;
 using EssentialMediator.Abstractions.Mediation;
 using EssentialMediator.Abstractions.Messages;
+using EssentialMediator.Exceptions;
+using EssentialMediator.Mediation;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
+using System.Reflection;
+using System.Runtime.ExceptionServices;
 
 namespace EssentialMediator;
 
 /// <summary>
-/// Default implementation of IMediator - Simple and efficient
+/// Default optimized implementation of IMediator
 /// </summary>
 public sealed class Mediator : IMediator
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<Mediator> _logger;
+    private static readonly ConcurrentDictionary<Type, MethodInfo> HandleMethodCache = new();
 
     public Mediator(IServiceProvider serviceProvider, ILogger<Mediator> logger)
     {
@@ -22,125 +26,31 @@ public sealed class Mediator : IMediator
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public async Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
+    public Task<TResponse> Send<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var requestType = request.GetType();
-        var responseType = typeof(TResponse);
-        var handlerType = typeof(IRequestHandler<,>).MakeGenericType(requestType, responseType);
-
-        _logger.LogDebug("Sending request {RequestType} expecting {ResponseType}", requestType.Name, responseType.Name);
-
-        var handlers = _serviceProvider.GetServices(handlerType).ToList();
-        if (!handlers.Any())
-        {
-            _logger.LogError("No handler registered for request type {RequestType}", requestType.Name);
-            throw new HandlerNotFoundException(requestType);
-        }
-
-        if (handlers.Count > 1)
-        {
-            _logger.LogError("Multiple handlers ({HandlerCount}) found for request type {RequestType} that expects single handler",
-                handlers.Count, requestType.Name);
-            throw new MultipleHandlersException(requestType, handlers.Count);
-        }
-
-        var handler = handlers.First();
-
-        try
-        {
-            var handleMethod = handler?.GetType().GetMethod("Handle");
-            if (handleMethod is null)
-                throw new HandlerConfigurationException(handlerType, "Handle method not found");
-
-            var invokeResult = handleMethod.Invoke(handler, new object[] { request, cancellationToken });
-            if (invokeResult is not Task<TResponse> task)
-                throw new HandlerConfigurationException(handlerType, $"Handler method did not return expected Task<{responseType.Name}>");
-
-            var result = await task.ConfigureAwait(false);
-
-            _logger.LogDebug("Successfully handled request {RequestType}", requestType.Name);
-            return result;
-        }
-        catch (TargetInvocationException ex) when (ex.InnerException is not null)
-        {
-            _logger.LogError(ex.InnerException, "Error handling request {RequestType}", requestType.Name);
-            throw ex.InnerException;
-        }
-        catch (Exception ex) when (!(ex is MediatorException))
-        {
-            _logger.LogError(ex, "Error handling request {RequestType}", requestType.Name);
-            throw;
-        }
+        if (request == null) throw new ArgumentNullException(nameof(request));
+        return SendInternalAsync(request, cancellationToken);
     }
 
-    public async Task<Unit> Send(IRequest request, CancellationToken cancellationToken = default)
+    public Task<Unit> Send(IRequest request, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var requestType = request.GetType();
-        var handlerType = typeof(IRequestHandler<>).MakeGenericType(requestType);
-
-        _logger.LogDebug("Sending void request {RequestType}", requestType.Name);
-
-        var handlers = _serviceProvider.GetServices(handlerType).ToList();
-        if (!handlers.Any())
-        {
-            _logger.LogError("No handler registered for request type {RequestType}", requestType.Name);
-            throw new HandlerNotFoundException(requestType);
-        }
-
-        if (handlers.Count > 1)
-        {
-            _logger.LogError("Multiple handlers ({HandlerCount}) found for request type {RequestType} that expects single handler",
-                handlers.Count, requestType.Name);
-            throw new MultipleHandlersException(requestType, handlers.Count);
-        }
-
-        var handler = handlers.First();
-
-        try
-        {
-            var handleMethod = handler?.GetType().GetMethod("Handle");
-            if (handleMethod is null)
-                throw new HandlerConfigurationException(handlerType, "Handle method not found");
-
-            var invokeResult = handleMethod.Invoke(handler, new object[] { request, cancellationToken });
-            if (invokeResult is not Task<Unit> task)
-                throw new HandlerConfigurationException(handlerType, "Handler method did not return expected Task<Unit>");
-
-            var result = await task.ConfigureAwait(false);
-
-            _logger.LogDebug("Successfully handled void request {RequestType}", requestType.Name);
-            return result;
-        }
-        catch (TargetInvocationException ex) when (ex.InnerException is not null)
-        {
-            _logger.LogError(ex.InnerException, "Error handling void request {RequestType}", requestType.Name);
-            throw ex.InnerException;
-        }
-        catch (Exception ex) when (!(ex is MediatorException))
-        {
-            _logger.LogError(ex, "Error handling void request {RequestType}", requestType.Name);
-            throw;
-        }
+        if (request == null) throw new ArgumentNullException(nameof(request));
+        return SendInternalVoidAsync(request, cancellationToken);
     }
 
     public async Task Publish(INotification notification, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(notification);
+        if (notification == null) throw new ArgumentNullException(nameof(notification));
 
         var notificationType = notification.GetType();
-        var handlerType = typeof(INotificationHandler<>).MakeGenericType(notificationType);
+        var handlerInterface = typeof(INotificationHandler<>).MakeGenericType(notificationType);
 
         _logger.LogDebug("Publishing notification {NotificationType}", notificationType.Name);
 
-        var handlers = _serviceProvider.GetServices(handlerType).ToList();
-
+        var handlers = _serviceProvider.GetServices(handlerInterface).ToList();
         if (!handlers.Any())
         {
-            _logger.LogWarning("No handlers registered for notification type {NotificationType}", notificationType.Name);
+            _logger.LogWarning("No handlers registered for notification {NotificationType}", notificationType.Name);
             return;
         }
 
@@ -148,37 +58,128 @@ public sealed class Mediator : IMediator
             handlers.Count, notificationType.Name);
 
         var tasks = new List<Task>();
-
         foreach (var handler in handlers)
         {
             try
             {
-                var handleMethod = handler?.GetType().GetMethod("Handle");
-                if (handleMethod is null)
-                {
-                    _logger.LogWarning("Handle method not found on handler {HandlerType}", handler?.GetType().Name ?? "Unknown");
-                    continue;
-                }
+                var method = HandleMethodCache.GetOrAdd(
+                    handler.GetType(),
+                    t => t.GetMethod("Handle", new[] { notificationType, typeof(CancellationToken) })
+                          ?? throw new HandlerConfigurationException(handlerInterface, "Handle method not found"));
 
-                var invokeResult = handleMethod.Invoke(handler, new object[] { notification, cancellationToken });
-                if (invokeResult is Task task)
+                if (method.Invoke(handler, new object[] { notification, cancellationToken }) is Task task)
                     tasks.Add(task);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating task for notification handler {HandlerType}", handler?.GetType().Name ?? "Unknown");
+                _logger.LogError(ex, "Error creating task for handler {HandlerType}", handler.GetType().Name);
             }
         }
 
         try
         {
             await Task.WhenAll(tasks).ConfigureAwait(false);
-            _logger.LogDebug("Successfully published notification {NotificationType} to {HandlerCount} handlers",
-                notificationType.Name, handlers.Count);
+            _logger.LogDebug("Successfully published notification {NotificationType}", notificationType.Name);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error publishing notification {NotificationType}", notificationType.Name);
+            throw;
+        }
+    }
+
+    private async Task<TResponse> SendInternalAsync<TResponse>(IRequest<TResponse> request, CancellationToken cancellationToken)
+    {
+        var requestType = request.GetType();
+        var responseType = typeof(TResponse);
+        var handlerInterface = typeof(IRequestHandler<,>).MakeGenericType(requestType, responseType);
+
+        _logger.LogDebug("Sending request {RequestType} expecting {ResponseType}", requestType.Name, responseType.Name);
+
+        var handlers = _serviceProvider.GetServices(handlerInterface).ToList();
+        if (handlers.Count == 0)
+        {
+            _logger.LogError("No handler registered for request {RequestType}", requestType.Name);
+            throw new HandlerNotFoundException(requestType);
+        }
+        if (handlers.Count > 1)
+        {
+            _logger.LogError("Multiple handlers ({HandlerCount}) found for request {RequestType}", handlers.Count, requestType.Name);
+            throw new MultipleHandlersException(requestType, handlers.Count);
+        }
+
+        var handler = handlers.Single();
+        try
+        {
+            var method = HandleMethodCache.GetOrAdd(
+                handler.GetType(),
+                t => t.GetMethod("Handle", new[] { requestType, typeof(CancellationToken) })
+                      ?? throw new HandlerConfigurationException(handlerInterface, "Handle method not found"));
+
+
+            var resultTask = method.Invoke(handler, new object[] { request, cancellationToken }) as Task<TResponse>
+                                ?? throw new InvalidOperationException("Handler method returned null for a non-nullable Task<Unit>.");
+            var result = await resultTask.ConfigureAwait(false);
+
+            _logger.LogDebug("Successfully handled request {RequestType}", requestType.Name);
+            return result;
+        }
+        catch (TargetInvocationException tie) when (tie.InnerException != null)
+        {
+            _logger.LogError(tie.InnerException, "Error handling request {RequestType}", requestType.Name);
+            ExceptionDispatchInfo.Capture(tie.InnerException).Throw();
+            throw; // unreachable
+        }
+        catch (Exception ex) when (!(ex is MediatorException))
+        {
+            _logger.LogError(ex, "Error sending request {RequestType}", requestType.Name);
+            throw;
+        }
+    }
+
+    private async Task<Unit> SendInternalVoidAsync(IRequest request, CancellationToken cancellationToken)
+    {
+        var requestType = request.GetType();
+        var handlerInterface = typeof(IRequestHandler<>).MakeGenericType(requestType);
+
+        _logger.LogDebug("Sending void request {RequestType}", requestType.Name);
+
+        var handlers = _serviceProvider.GetServices(handlerInterface).ToList();
+        if (handlers.Count == 0)
+        {
+            _logger.LogError("No handler registered for request {RequestType}", requestType.Name);
+            throw new HandlerNotFoundException(requestType);
+        }
+        if (handlers.Count > 1)
+        {
+            _logger.LogError("Multiple handlers ({HandlerCount}) found for request {RequestType}", handlers.Count, requestType.Name);
+            throw new MultipleHandlersException(requestType, handlers.Count);
+        }
+
+        var handler = handlers.Single();
+        try
+        {
+            var method = HandleMethodCache.GetOrAdd(
+                handler.GetType(),
+                t => t.GetMethod("Handle", new[] { requestType, typeof(CancellationToken) })
+                      ?? throw new HandlerConfigurationException(handlerInterface, "Handle method not found"));
+
+            var resultTask = method.Invoke(handler, new object[] { request, cancellationToken }) as Task<Unit>
+                ?? throw new InvalidOperationException("Handler method returned null for a non-nullable Task<Unit>.");
+            var result = await resultTask.ConfigureAwait(false);
+
+            _logger.LogDebug("Successfully handled void request {RequestType}", requestType.Name);
+            return result;
+        }
+        catch (TargetInvocationException tie) when (tie.InnerException != null)
+        {
+            _logger.LogError(tie.InnerException, "Error handling void request {RequestType}", requestType.Name);
+            ExceptionDispatchInfo.Capture(tie.InnerException).Throw();
+            throw;
+        }
+        catch (Exception ex) when (!(ex is MediatorException))
+        {
+            _logger.LogError(ex, "Error sending void request {RequestType}", requestType.Name);
             throw;
         }
     }

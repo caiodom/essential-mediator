@@ -1,7 +1,7 @@
 ﻿using EssentialMediator.Abstractions.Mediation;
 using EssentialMediator.Abstractions.Messages;
 
-namespace EssentialMediator;
+namespace EssentialMediator.Mediation;
 
 /// <summary>
 /// Defines a mediator to encapsulate request/response and publisher/subscriber patterns

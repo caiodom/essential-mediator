@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using EssentialMediator.Abstractions.Handlers;
 using EssentialMediator.Extensions.DependencyInjection.Configuration;
+using EssentialMediator.Mediation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

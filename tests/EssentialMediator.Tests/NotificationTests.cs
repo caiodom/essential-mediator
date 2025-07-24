@@ -1,4 +1,5 @@
 ﻿using EssentialMediator.Abstractions.Handlers;
+using EssentialMediator.Mediation;
 using EssentialMediator.Tests.Models.Notifications;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

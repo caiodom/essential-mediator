@@ -1,6 +1,7 @@
 ﻿using EssentialMediator.Abstractions.Handlers;
 using EssentialMediator.Abstractions.Mediation;
 using EssentialMediator.Exceptions;
+using EssentialMediator.Mediation;
 using EssentialMediator.Tests.Models.Requests;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
