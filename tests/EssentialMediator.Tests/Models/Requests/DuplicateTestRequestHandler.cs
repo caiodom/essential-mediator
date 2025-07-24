@@ -2,6 +2,10 @@
 
 namespace EssentialMediator.Tests.Models.Requests;
 
+/// <summary>
+/// Handler duplicado usado apenas para testes de validação de múltiplos handlers.
+/// NÃO registrar automaticamente via assembly scanning.
+/// </summary>
 public class DuplicateTestRequestHandler : IRequestHandler<TestRequest, string>
 {
     public Task<string> Handle(TestRequest request, CancellationToken cancellationToken = default)
