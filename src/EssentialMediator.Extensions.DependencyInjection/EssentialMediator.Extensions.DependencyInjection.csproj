@@ -1,9 +1,30 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+	  <TargetFramework>net9.0</TargetFramework>
+	  <LangVersion>latest</LangVersion>
+	  <Nullable>enable</Nullable>
+	  <ImplicitUsings>enable</ImplicitUsings>
+	  <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+	  <!-- Package Metadata -->
+	  <PackageId>EssentialMediator.Extensions.DependencyInjection</PackageId>
+	  <PackageVersion>1.0.0</PackageVersion>
+	  <AssemblyVersion>1.0.0.0</AssemblyVersion>
+	  <FileVersion>1.0.0.0</FileVersion>
+
+	  <Title>EssentialMediator Dependency Injection Extensions</Title>
+	  <Description>Dependency Injection Extensions for EssentialMediator - a simple and efficient mediator pattern implementation for .NET</Description>
+	  <Description>Microsoft.Extensions.DependencyInjection extensions for EssentialMediator</Description>
+	  <Authors>Caio Henrique Domingues Leite</Authors>
+	  <Copyright>Copyright © 2025 Caio Henrique Domingues Leite</Copyright>
+	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+	  <PackageProjectUrl>https://github.com/caiodom/essential-mediator</PackageProjectUrl>
+	  <RepositoryUrl>https://github.com/caiodom/essential-mediator</RepositoryUrl>
+	  <RepositoryType>git</RepositoryType>
+	  <PackageTags>mediator;cqrs;dependency-injection;microsoft-extensions</PackageTags>
+	  <PackageReadmeFile>README.md</PackageReadmeFile>
+	  <PackageReleaseNotes>Initial release of EssentialMediator DI extensions with assembly scanning and flexible registration.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,5 +35,9 @@
     <ProjectReference Include="..\EssentialMediator.Abstractions\EssentialMediator.Abstractions.csproj" />
     <ProjectReference Include="..\EssentialMediator\EssentialMediator.csproj" />
   </ItemGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
 
 </Project>

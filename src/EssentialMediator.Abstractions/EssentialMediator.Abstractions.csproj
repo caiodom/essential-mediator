@@ -2,8 +2,32 @@
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
+	<LangVersion>latest</LangVersion> 
     <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<ImplicitUsings>enable</ImplicitUsings>
+	<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+	<!-- Package Metadata -->
+	<PackageId>EssentialMediator.Abstractions</PackageId>
+	<PackageVersion>1.0.0</PackageVersion>
+	<AssemblyVersion>1.0.0.0</AssemblyVersion>
+	<FileVersion>1.0.0.0</FileVersion>
+
+	<Title>EssentialMediator Abstractions</Title>
+	<Description>Abstractions for EssentialMediator - a simple and efficient mediator pattern implementation for .NET</Description>
+	<Authors>Caio Henrique Domingues Leite</Authors>
+	<Copyright>Copyright © 2025 Caio Henrique Domingues Leite </Copyright>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
+	<PackageProjectUrl>https://github.com/caiodom/essential-mediator</PackageProjectUrl>
+	<RepositoryUrl>https://github.com/caiodom/essential-mediator</RepositoryUrl>
+	<RepositoryType>git</RepositoryType>
+	<PackageTags>mediator;cqrs;abstractions;interfaces</PackageTags>
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<PackageReleaseNotes>Initial release of EssentialMediator abstractions with core interfaces and contracts.</PackageReleaseNotes>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
 
 </Project>
