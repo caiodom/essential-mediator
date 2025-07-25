@@ -3,6 +3,8 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![.NET 9.0](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com/)
 
+> ⚠️ **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete. Not recommended for production use yet.
+
 A simple, lightweight, and efficient implementation of the Mediator pattern for .NET, designed for simplicity and enhanced functionality with modular architecture.
 
 ## Features
@@ -16,11 +18,11 @@ A simple, lightweight, and efficient implementation of the Mediator pattern for 
 - **Flexible DI** - Configurable service lifetimes and advanced configuration
 - **Built-in Behaviors** - Ready-to-use logging, validation, and performance behaviors
 
-## Architecture & Packages
+## Projects Structure
 
 EssentialMediator is built with a clean, modular architecture:
 
-### Core Packages
+### Core Projects
 
 **EssentialMediator.Abstractions** - Core interfaces and contracts (zero dependencies)
 - `IMediator`, `IRequest<T>`, `INotification`
@@ -44,16 +46,16 @@ EssentialMediator is built with a clean, modular architecture:
 - Easy unit testing with minimal dependencies
 - Clean architecture compliance
 
-## Installation and Setup
+## Getting Started
 
-### Installation
+### Setup from Source
+
+Clone the repository and build the project:
 
 ```bash
-# Core package with abstractions and implementation
-dotnet add package EssentialMediator
-
-# DI extensions (if using Microsoft.Extensions.DependencyInjection)
-dotnet add package EssentialMediator.Extensions.DependencyInjection
+git clone https://github.com/caiodom/essential-mediator.git
+cd essential-mediator
+dotnet build
 ```
 
 ### Basic Registration
@@ -632,7 +634,7 @@ public class UserControllerTests
 }
 ```
 
-## Getting Started
+## Quick Start Guide
 
 ### 1. Create a New Project
 
@@ -640,11 +642,24 @@ public class UserControllerTests
 mkdir MyApp
 cd MyApp
 dotnet new webapi
-dotnet add package EssentialMediator
-dotnet add package EssentialMediator.Extensions.DependencyInjection
 ```
 
-### 2. Setup Program.cs
+### 2. Add Project References
+
+Add references to the EssentialMediator projects:
+
+```bash
+# Add reference to the core abstractions
+dotnet add reference path/to/EssentialMediator.Abstractions/EssentialMediator.Abstractions.csproj
+
+# Add reference to the main implementation  
+dotnet add reference path/to/EssentialMediator/EssentialMediator.csproj
+
+# Add reference to DI extensions
+dotnet add reference path/to/EssentialMediator.Extensions.DependencyInjection/EssentialMediator.Extensions.DependencyInjection.csproj
+```
+
+### 3. Setup Program.cs
 
 ```csharp
 using EssentialMediator.Extensions;
@@ -1029,7 +1044,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 ## Links
 
 - **Repository**: [https://github.com/caiodom/essential-mediator](https://github.com/caiodom/essential-mediator)
-- **NuGet Package**: [https://www.nuget.org/packages/EssentialMediator](https://www.nuget.org/packages/EssentialMediator)
 - **Issues**: [https://github.com/caiodom/essential-mediator/issues](https://github.com/caiodom/essential-mediator/issues)
 - **Discussions**: [https://github.com/caiodom/essential-mediator/discussions](https://github.com/caiodom/essential-mediator/discussions)
 

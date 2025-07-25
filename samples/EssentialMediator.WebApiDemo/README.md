@@ -1,5 +1,7 @@
 # EssentialMediator WebAPI Demo
 
+> ⚠️ **Under Construction** - This demo project is currently under active development and may have incomplete features.
+
 A comprehensive ASP.NET Core Web API demonstration of EssentialMediator features, showcasing real-world usage patterns and best practices.
 
 ## Features Demonstrated

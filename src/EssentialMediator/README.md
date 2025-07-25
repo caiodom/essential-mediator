@@ -1,5 +1,7 @@
 # EssentialMediator
 
+> ⚠️ **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete.
+
 Core implementation of EssentialMediator - Contains the main mediator implementation with optimized performance and built-in behaviors.
 
 ## What's Included
@@ -38,7 +40,7 @@ Monitors and logs slow requests based on configurable thresholds.
 
 ## Usage
 
-This package is typically used together with:
+This project is typically used together with:
 
 - **EssentialMediator.Abstractions** - For interfaces (auto-referenced)
 - **EssentialMediator.Extensions.DependencyInjection** - For registration (recommended)
@@ -48,7 +50,7 @@ This package is typically used together with:
 services.AddEssentialMediator(typeof(Program).Assembly)
         .AddAllBuiltInBehaviors(slowRequestThresholdMs: 500);
 
-// Direct usage (not recommended)
+// Direct usage (manual setup)
 var services = new ServiceCollection();
 services.AddLogging();
 services.AddScoped<IMediator, Mediator>();
@@ -57,7 +59,7 @@ var mediator = serviceProvider.GetRequiredService<IMediator>();
 var result = await mediator.Send(new GetUserQuery { Id = 1 });
 ```
 
-## Related Packages
+## Related Projects
 
 - **EssentialMediator.Abstractions** - Core interfaces and contracts
 - **EssentialMediator.Extensions.DependencyInjection** - DI registration extensions

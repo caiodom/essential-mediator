@@ -1,5 +1,7 @@
 ﻿# EssentialMediator.Extensions.DependencyInjection
 
+> ⚠️ **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete.
+
 Dependency Injection extensions for EssentialMediator - Seamless integration with Microsoft.Extensions.DependencyInjection with advanced configuration options.
 
 ## What's Included
@@ -229,7 +231,7 @@ services.AddEssentialMediator(typeof(MyHandler).Assembly);
 cfg.WithServiceLifetime(ServiceLifetime.Singleton);
 ```
 
-## Related Packages
+## Related Projects
 
 - **EssentialMediator.Abstractions** - Core interfaces and contracts
 - **EssentialMediator** - Core implementation with built-in behaviors
@@ -264,7 +266,7 @@ cfg.WithServiceLifetime(ServiceLifetime.Singleton);
 - .NET 9.0+
 - Microsoft.Extensions.DependencyInjection.Abstractions 8.0+
 
-## Related Packages
+## Related Projects
 
 - **EssentialMediator.Abstractions** - Core interfaces
 - **EssentialMediator** - Core implementation

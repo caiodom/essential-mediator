@@ -1,5 +1,7 @@
 # EssentialMediator.Abstractions
 
+> ⚠️ **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete.
+
 Abstractions package for EssentialMediator - Contains core interfaces and contracts with zero dependencies, perfect for clean architecture implementations.
 
 ## What's Included
@@ -136,7 +138,7 @@ public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
 - **Flexibility** - Use with any DI container or implementation
 - **Performance** - Minimal overhead, just contracts
 
-## Related Packages
+## Related Projects
 
 - **EssentialMediator** - Core implementation with built-in behaviors
 - **EssentialMediator.Extensions.DependencyInjection** - Microsoft DI registration extensions
