@@ -1,22 +1,21 @@
 # EssentialMediator.Abstractions
 
-**Abstractions package for EssentialMediator** - Contains core interfaces and contracts with zero dependencies.
+Abstractions package for EssentialMediator - Contains core interfaces and contracts with zero dependencies.
 
-##  What's Included
+## What's Included
 
 - `IMediator` - Core mediator interface
 - `IRequest<T>` / `IRequest` - Request contracts
 - `IRequestHandler<T,R>` / `IRequestHandler<T>` - Handler contracts  
 - `INotification` - Notification contract
 - `INotificationHandler<T>` - Notification handler contract
-- `IPipelineBehavior<T,R>` - Pipeline behavior contract
 - `Unit` - Void type representation
 
-##  Purpose
+## Purpose
 
-This package contains **only interfaces and basic types** with **zero dependencies**
+This package contains only interfaces and basic types with zero dependencies
 
-##  Usage
+## Usage
 
 ```csharp
 // Reference only abstractions in your domain/application layer

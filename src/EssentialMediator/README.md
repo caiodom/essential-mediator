@@ -1,16 +1,15 @@
 # EssentialMediator
 
-**Core implementation of EssentialMediator** - Contains the main mediator implementation.
+Core implementation of EssentialMediator - Contains the main mediator implementation.
 
 ## What's Included
 
 - `Mediator` - Main mediator implementation
 - `MediatorExceptions` - Custom exceptions for better debugging
-- **Pipeline behaviors** support
 
 ## Purpose
 
-This package contains the **core implementation** of EssentialMediator with:
+This package contains the core implementation of EssentialMediator with:
 
 - **Main mediator logic**
 - **Custom exceptions** for better debugging experience
@@ -33,9 +32,7 @@ var mediator = serviceProvider.GetRequiredService<IMediator>();
 var result = await mediator.Send(new GetUserQuery { Id = 1 });
 ```
 
-
-
-##  Related Packages
+## Related Packages
 
 - **EssentialMediator.Abstractions** - Core interfaces
 - **EssentialMediator.Extensions.DependencyInjection** - DI registration extensions

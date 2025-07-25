@@ -3,17 +3,16 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![.NET 9.0](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com/)
 
-A **simple, and efficient** implementation of the Mediator pattern for .NET designed for simplicity and enhanced functionality.
+A simple and efficient implementation of the Mediator pattern for .NET, designed for simplicity and enhanced functionality.
 
 ## Features
 
--  **Request/Response Pattern** - Type-safe request handling
--  **Notification Pattern** - Publish to multiple handlers
--  **Pipeline Behaviors** - Cross-cutting concerns (logging, validation, performance)
--  **Custom Exceptions** - Better debugging experience
--  **Flexible DI** - Configurable service lifetimes
+- **Request/Response Pattern** - Type-safe request handling
+- **Notification Pattern** - Publish to multiple handlers
+- **Custom Exceptions** - Better debugging experience
+- **Flexible DI** - Configurable service lifetimes
 
-##  Installation and Setup
+## Installation and Setup
 
 ### Installation
 
@@ -35,7 +34,7 @@ services.AddEssentialMediator(cfg =>
 });
 ```
 
-##  Usage Examples
+## Usage Examples
 
 ### Request/Response
 
@@ -122,64 +121,6 @@ public class UpdateAuditLogHandler : INotificationHandler<UserCreatedEvent>
 await _mediator.Publish(new UserCreatedEvent { User = user });
 ```
 
-## Pipeline Behaviors
-
-Pipeline behaviors allow implementing cross-cutting concerns elegantly:
-
-### Custom Behavior Example
-
-```csharp
-public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
-{
-    private readonly ILogger<LoggingBehavior<TRequest, TResponse>> _logger;
-
-    public LoggingBehavior(ILogger<LoggingBehavior<TRequest, TResponse>> logger)
-    {
-        _logger = logger;
-    }
-
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
-    {
-        var requestName = typeof(TRequest).Name;
-        _logger.LogInformation("Handling {RequestName}", requestName);
-        
-        var stopwatch = Stopwatch.StartNew();
-        var response = await next();
-        stopwatch.Stop();
-        
-        _logger.LogInformation("Handled {RequestName} in {ElapsedMs}ms", requestName, stopwatch.ElapsedMilliseconds);
-        
-        return response;
-    }
-}
-
-// Registration
-services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-```
-
-### Validation Behavior
-
-```csharp
-public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
-{
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
-    {
-        var context = new ValidationContext(request);
-        var results = new List<ValidationResult>();
-        
-        if (!Validator.TryValidateObject(request, context, results, true))
-        {
-            var errors = string.Join(", ", results.Select(r => r.ErrorMessage));
-            throw new ValidationException($"Validation failed: {errors}");
-        }
-        
-        return await next();
-    }
-}
-```
-
 ## Custom Exceptions
 
 EssentialMediator provides custom exceptions for better debugging:
@@ -263,10 +204,10 @@ await mediator.Publish(notification);
 
 EssentialMediator is built with a modular architecture:
 
-###  Packages
+### Packages
 
 - **`EssentialMediator.Abstractions`** - Core interfaces and contracts (zero dependencies)
-- **`EssentialMediator`** - Core implementation with Result Pattern and custom exceptions
+- **`EssentialMediator`** - Core implementation with custom exceptions
 - **`EssentialMediator.Extensions.DependencyInjection`** - Microsoft.Extensions.DependencyInjection integration
 
 This modular approach allows you to:

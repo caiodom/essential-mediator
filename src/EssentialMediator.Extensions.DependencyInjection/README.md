@@ -1,6 +1,6 @@
 ﻿# EssentialMediator.Extensions.DependencyInjection
 
-**Dependency Injection extensions for EssentialMediator** - Seamless integration with Microsoft.Extensions.DependencyInjection.
+Dependency Injection extensions for EssentialMediator - Seamless integration with Microsoft.Extensions.DependencyInjection.
 
 ## What's Included
 
