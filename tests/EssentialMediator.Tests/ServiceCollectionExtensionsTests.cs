@@ -224,4 +224,103 @@ public class ServiceCollectionExtensionsTests
         var mediator2b = sp2.GetService<IMediator>();
         Assert.NotSame(mediator2a, mediator2b); // Transient
     }
+
+    [Fact]
+    public void AddEssentialMediator_WithNullServices_ShouldThrowArgumentNullException()
+    {
+        // Arrange
+        IServiceCollection? services = null;
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => services!.AddEssentialMediator());
+    }
+
+    [Fact]
+    public void AddEssentialMediator_WithNullConfiguration_ShouldThrowArgumentNullException()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => 
+            services.AddEssentialMediator((Action<EssentialMediator.Extensions.DependencyInjection.Configuration.MediatorConfiguration>)null!));
+    }
+
+    [Fact]
+    public void AddEssentialMediator_WithNoAssemblies_ShouldUseCallingAssembly()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        // Act
+        services.AddEssentialMediator();
+
+        // Assert
+        var serviceProvider = services.BuildServiceProvider();
+        var mediator = serviceProvider.GetService<IMediator>();
+        Assert.NotNull(mediator);
+    }
+
+    [Fact]
+    public void AddEssentialMediator_WithDuplicateAssemblies_ShouldHandleGracefully()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var assembly = typeof(TestRequest).Assembly;
+
+        // Act - Add same assembly twice
+        services.AddEssentialMediator(assembly, assembly);
+
+        // Assert - Should not throw and should work normally
+        var serviceProvider = services.BuildServiceProvider();
+        var mediator = serviceProvider.GetService<IMediator>();
+        Assert.NotNull(mediator);
+    }
+
+    [Fact]
+    public void AddEssentialMediator_WithMultipleAssemblies_ShouldScanAll()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+        var assembly1 = typeof(TestRequest).Assembly;
+        var assembly2 = typeof(string).Assembly;
+
+        // Act
+        services.AddEssentialMediator(assembly1, assembly2);
+
+        // Assert
+        var serviceProvider = services.BuildServiceProvider();
+        var mediator = serviceProvider.GetService<IMediator>();
+        Assert.NotNull(mediator);
+    }
+
+    [Fact]
+    public void AddEssentialMediator_WithScopedLifetime_ShouldRegisterAsScoped()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddLogging();
+
+        // Act
+        services.AddEssentialMediator(config =>
+        {
+            config.RegisterServicesFromAssemblyContaining<TestRequest>()
+                  .WithServiceLifetime(ServiceLifetime.Scoped);
+        });
+
+        // Assert
+        var serviceProvider = services.BuildServiceProvider();
+        using var scope1 = serviceProvider.CreateScope();
+        using var scope2 = serviceProvider.CreateScope();
+
+        var mediator1 = scope1.ServiceProvider.GetService<IMediator>();
+        var mediator2 = scope1.ServiceProvider.GetService<IMediator>();
+        var mediator3 = scope2.ServiceProvider.GetService<IMediator>();
+
+        Assert.Same(mediator1, mediator2); // Same within scope
+        Assert.NotSame(mediator1, mediator3); // Different across scopes
+    }
 }
