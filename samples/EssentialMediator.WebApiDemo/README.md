@@ -1,5 +1,7 @@
 # EssentialMediator WebAPI Demo
 
+> **Under Construction** - This demo project is currently under active development and may have incomplete features.
+
 A comprehensive ASP.NET Core Web API demonstration of EssentialMediator features, showcasing real-world usage patterns and best practices.
 
 ## Features Demonstrated
@@ -7,6 +9,7 @@ A comprehensive ASP.NET Core Web API demonstration of EssentialMediator features
 - **CRUD Operations** - Complete user management with Create, Read, Update, Delete
 - **Request/Response Pattern** - Queries and commands with different response types
 - **Notification Pattern** - Domain events with multiple handlers
+- **Pipeline Behaviors** - Logging, validation, and performance monitoring
 - **Exception Handling** - Custom exception handling with proper HTTP responses
 - **FluentValidation Integration** - Automatic request validation
 - **Entity Framework Integration** - In-memory database for demo purposes
@@ -219,11 +222,12 @@ public class CreateUserValidator : AbstractValidator<CreateUserCommand>
 
 ## Configuration
 
-The application is configured in `Program.cs` with EssentialMediator:
+The application is configured in `Program.cs` with all EssentialMediator features:
 
 ```csharp
-// Add EssentialMediator
-builder.Services.AddEssentialMediator(Assembly.GetExecutingAssembly());
+// Add EssentialMediator with all built-in behaviors
+builder.Services.AddEssentialMediator(Assembly.GetExecutingAssembly())
+                .AddAllBuiltInBehaviors(slowRequestThresholdMs: 500);
 
 // Add FluentValidation
 builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
@@ -231,6 +235,16 @@ builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
 // Add Entity Framework
 builder.Services.AddDbContext<DemoDbContext>(options =>
     options.UseInMemoryDatabase("DemoDatabase"));
+```
+
+## Performance Monitoring
+
+The demo includes performance monitoring that logs slow requests:
+
+```bash
+# Example log output
+info: EssentialMediator.Behaviors.PerformanceBehavior[0]
+      Slow request detected: GetUsersQuery took 750ms
 ```
 
 ## Testing the API
@@ -301,14 +315,17 @@ DELETE https://localhost:5001/api/users/1
 1. **Feature Organization** - Organize code by features rather than technical layers
 2. **Handler Separation** - Keep handlers focused on single responsibilities
 3. **Event-Driven Architecture** - Use domain events for loose coupling
-4. **Validation Integration** - Automatic request validation with detailed error messages
-5. **Exception Handling** - Global exception handling with appropriate HTTP status codes
+4. **Pipeline Behaviors** - Implement cross-cutting concerns elegantly
+5. **Validation Integration** - Automatic request validation with detailed error messages
+6. **Exception Handling** - Global exception handling with appropriate HTTP status codes
+7. **Performance Monitoring** - Built-in performance tracking and logging
 
 ## Next Steps
 
 - Explore the code to understand the patterns
 - Modify the handlers to add your own business logic
 - Add new endpoints and handlers
+- Experiment with custom pipeline behaviors
 - Try different validation rules
 - Implement additional event handlers
 
