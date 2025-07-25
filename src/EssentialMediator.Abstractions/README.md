@@ -1,6 +1,6 @@
 # EssentialMediator.Abstractions
 
-> ⚠️ **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete.
+> **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete.
 
 Abstractions package for EssentialMediator - Contains core interfaces and contracts with zero dependencies, perfect for clean architecture implementations.
 

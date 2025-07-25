@@ -3,7 +3,7 @@
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![.NET 9.0](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com/)
 
-> ⚠️ **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete. Not recommended for production use yet.
+> **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete. Not recommended for production use yet.
 
 A simple, lightweight, and efficient implementation of the Mediator pattern for .NET, designed for simplicity and enhanced functionality with modular architecture.
 

@@ -1,0 +1,65 @@
+name: Auto PR to Main
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  build-test-and-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for all branches
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore --configuration Release
+
+    - name: Test
+      run: dotnet test --no-build --configuration Release --verbosity normal
+
+    - name: Create Pull Request
+      if: success()
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # Check if PR already exists
+        existing_pr=$(gh pr list --base main --head develop --json number --jq '.[0].number' || echo "")
+        
+        if [ -z "$existing_pr" ]; then
+          gh pr create \
+            --base main \
+            --head develop \
+            --title "Auto PR: Merge develop to main" \
+            --body "## Automated Pull Request
+
+        This PR was automatically created after successful CI build and tests on the develop branch.
+
+        ### What was validated:
+        - Build successful
+        - All tests passing
+        - Code quality checks passed
+
+        ### Changes included:
+        All changes that were pushed to the develop branch since the last merge to main.
+
+        ### Review checklist:
+        - [ ] Review code changes
+        - [ ] Verify test coverage
+        - [ ] Check for breaking changes
+        - [ ] Update version if needed
+
+        Created automatically by GitHub Actions" \
+            --label "automated,ci-cd,ready-for-review"
+        else
+          echo "PR already exists: #$existing_pr"
+        fi

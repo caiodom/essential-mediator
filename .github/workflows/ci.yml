@@ -1,10 +1,10 @@
 name: CI
 
 on:
-  push:
-    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+  push:
+    branches: [ main ]  # Only run on main for direct pushes
 
 jobs:
   build-and-test:

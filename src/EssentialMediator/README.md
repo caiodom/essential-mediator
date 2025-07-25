@@ -1,6 +1,6 @@
 # EssentialMediator
 
-> ⚠️ **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete.
+> **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete.
 
 Core implementation of EssentialMediator - Contains the main mediator implementation with optimized performance and built-in behaviors.
 

@@ -1,6 +1,6 @@
 ﻿# EssentialMediator.Extensions.DependencyInjection
 
-> ⚠️ **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete.
+> **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete.
 
 Dependency Injection extensions for EssentialMediator - Seamless integration with Microsoft.Extensions.DependencyInjection with advanced configuration options.
 
