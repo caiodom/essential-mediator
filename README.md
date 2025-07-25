@@ -829,37 +829,6 @@ public class OrderProcessingService : BackgroundService
 }
 ```
 
-## Migration Guide
-
-### From MediatR
-
-EssentialMediator is designed to be largely compatible with MediatR:
-
-```csharp
-// MediatR
-using MediatR;
-
-// EssentialMediator - similar interface
-using EssentialMediator.Mediation;
-using EssentialMediator.Abstractions.Messages;
-using EssentialMediator.Abstractions.Handlers;
-
-// Registration
-// MediatR
-services.AddMediatR(typeof(Program));
-
-// EssentialMediator
-services.AddEssentialMediator(typeof(Program).Assembly);
-```
-
-### Key Differences
-
-1. **Namespace Structure**: More organized with `.Abstractions` separation
-2. **Performance**: Optimized implementation with caching
-3. **Built-in Behaviors**: Ready-to-use common behaviors
-4. **Exception Handling**: More specific custom exceptions
-5. **Configuration**: More flexible configuration options
-
 ## Samples and Examples
 
 Check out the complete samples in the repository:
