@@ -1018,6 +1018,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 ---
 
-**Made with care by [Caio Henrique Domingues Leite](https://github.com/caiodom)**
+**Made by [Caio Henrique Domingues Leite](https://github.com/caiodom)**
 
 
