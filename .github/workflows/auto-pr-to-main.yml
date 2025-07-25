@@ -4,6 +4,11 @@ on:
   push:
     branches: [ develop ]
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   build-test-and-pr:
     runs-on: ubuntu-latest
@@ -32,15 +37,11 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        # Check if PR already exists
-        existing_pr=$(gh pr list --base main --head develop --json number --jq '.[0].number' || echo "")
-        
-        if [ -z "$existing_pr" ]; then
-          gh pr create \
-            --base main \
-            --head develop \
-            --title "Auto PR: Merge develop to main" \
-            --body "## Automated Pull Request
+        gh pr create \
+          --base main \
+          --head develop \
+          --title "Auto PR: Merge develop to main" \
+          --body "## Automated Pull Request
 
         This PR was automatically created after successful CI build and tests on the develop branch.
 
@@ -59,7 +60,9 @@ jobs:
         - [ ] Update version if needed
 
         Created automatically by GitHub Actions" \
-            --label "automated,ci-cd,ready-for-review"
-        else
-          echo "PR already exists: #$existing_pr"
-        fi
+          --label "automated" \
+          --label "ci-cd" \
+          --label "ready-for-review" 2>/dev/null || {
+            echo "Failed to create PR - it may already exist"
+            exit 0
+          }
