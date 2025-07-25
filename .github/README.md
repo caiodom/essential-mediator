@@ -49,10 +49,13 @@ Automatic PRs receive the following labels:
 ## Configuration
 
 ### Required Permissions
-The workflow uses `GITHUB_TOKEN` which has automatic permissions to:
-- Create Pull Requests
-- Add labels
-- Assign reviewers
+The workflow requires a Personal Access Token (PAT) to create Pull Requests:
+
+1. **Create PAT**: GitHub Settings → Developer settings → Personal access tokens → Generate new token
+2. **Required scopes**: `repo` (full repository access)
+3. **Add as secret**: Repository Settings → Secrets and variables → Actions → New repository secret
+4. **Secret name**: `PAT_TOKEN`
+5. **Secret value**: Your generated PAT
 
 ### Customization
 To modify behavior, edit the files:
