@@ -23,9 +23,6 @@ jobs:
       with:
         dotnet-version: 9.0.x
 
-    - name: Install jq
-      run: sudo apt-get update && sudo apt-get install -y jq
-
     - name: Restore dependencies
       run: dotnet restore
 
@@ -35,67 +32,17 @@ jobs:
     - name: Test
       run: dotnet test --no-build --configuration Release --verbosity normal
 
-    - name: Check differences and create PR
+    - name: Create Pull Request
       if: success()
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        echo "Checking for differences between develop and main..."
-        
-        # Fetch latest main branch
-        git fetch origin main
-        
-        # Check if there are differences
-        if git diff --quiet origin/main..HEAD; then
-          echo "No differences found between develop and main. Skipping PR creation."
-          exit 0
-        fi
-        
-        echo "Differences found. Checking for existing PRs..."
-        
-        # Check for existing PRs using REST API (more reliable)
-        existing_pr=$(curl -s -H "Authorization: token $GH_TOKEN" \
+        # Create PR using GitHub REST API
+        curl -X POST \
+          -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
           -H "Accept: application/vnd.github.v3+json" \
-          "https://api.github.com/repos/${{ github.repository }}/pulls?head=${{ github.repository_owner }}:develop&base=main" | \
-          jq -r '.[0].number // empty')
-        
-        if [ -n "$existing_pr" ]; then
-          echo "PR already exists: #$existing_pr"
-          exit 0
-        fi
-        
-        echo "Creating new PR..."
-        gh pr create \
-          --base main \
-          --head develop \
-          --title "Auto PR: Merge develop to main" \
-          --body "## Automated Pull Request
-
-        This PR was automatically created after successful CI build and tests on the develop branch.
-
-        ### What was validated:
-        - Build successful
-        - All tests passing
-        - Code quality checks passed
-
-        ### Changes included:
-        All changes that were pushed to the develop branch since the last merge to main.
-
-        ### Review checklist:
-        - [ ] Review code changes
-        - [ ] Verify test coverage
-        - [ ] Check for breaking changes
-        - [ ] Update version if needed
-
-        Created automatically by GitHub Actions" \
-          --label "automated" \
-          --label "ci-cd" \
-          --label "ready-for-review" || {
-            echo "Failed to create PR. Debug info:"
-            echo "Repository: ${{ github.repository }}"
-            echo "Head branch: develop"
-            echo "Base branch: main"
-            echo "Actor: ${{ github.actor }}"
-            gh auth status
-            exit 1
-          }
+          https://api.github.com/repos/${{ github.repository }}/pulls \
+          -d '{
+            "title": "Auto PR: Merge develop to main",
+            "body": "## Automated Pull Request\n\nThis PR was automatically created after successful CI build and tests on the develop branch.\n\n### What was validated:\n- Build successful\n- All tests passing\n- Code quality checks passed\n\n### Changes included:\nAll changes that were pushed to the develop branch since the last merge to main.\n\n### Review checklist:\n- [ ] Review code changes\n- [ ] Verify test coverage\n- [ ] Check for breaking changes\n- [ ] Update version if needed\n\nCreated automatically by GitHub Actions",
+            "head": "develop",
+            "base": "main"
+          }' || echo "PR creation failed - may already exist"
