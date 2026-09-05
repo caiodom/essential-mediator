@@ -42,6 +42,22 @@ public class LifetimeConfigurationTests
     }
 
     [Fact]
+    public void AddEssentialMediator_WithSingletonMediatorLifetime_ShouldThrow()
+    {
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            services.AddEssentialMediator(configuration =>
+            {
+                configuration
+                    .RegisterServicesFromAssemblyContaining<TestRequest>()
+                    .WithMediatorLifetime(ServiceLifetime.Singleton);
+            }));
+
+        Assert.Contains("cannot be registered as Singleton", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void WithHandlerLifetime_ShouldNotChangeMediatorLifetime()
     {
         var configuration = new MediatorConfiguration()
