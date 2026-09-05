@@ -1,272 +1,113 @@
-﻿# EssentialMediator.Extensions.DependencyInjection
+# EssentialMediator.Extensions.DependencyInjection
 
-> **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete.
+Microsoft.Extensions.DependencyInjection integration for EssentialMediator on .NET 10.
 
-Dependency Injection extensions for EssentialMediator - Seamless integration with Microsoft.Extensions.DependencyInjection with advanced configuration options.
+Install this package when you want assembly scanning, `IServiceCollection` registration, independent mediator/handler lifetime configuration, and convenient registration of the built-in pipeline behaviors. It references the `EssentialMediator` runtime and `EssentialMediator.Abstractions` transitively.
 
-## What's Included
-
-- **`AddEssentialMediator()`** - Registration extensions with multiple overloads
-- **`MediatorConfiguration`** - Fluent configuration API for advanced scenarios
-- **Assembly Scanning** - Automatic handler discovery with intelligent filtering
-- **Service Lifetime Control** - Configure Singleton, Scoped, or Transient lifetimes
-- **Built-in Behaviors** - Easy registration of logging, validation, and performance behaviors
-- **Error Handling** - Graceful handling of assembly loading issues
-
-## Quick Start
-
-### Basic Registration
+## Quick start
 
 ```csharp
-// Register with single assembly scanning
+using EssentialMediator.Extensions;
+
 services.AddEssentialMediator(typeof(Program).Assembly);
+```
 
-// Register with multiple assemblies
+Multiple assemblies can be scanned explicitly:
+
+```csharp
 services.AddEssentialMediator(
-    typeof(UserHandlers).Assembly,
-    typeof(OrderHandlers).Assembly
-);
-
-// Register with built-in behaviors
-services.AddEssentialMediator(typeof(Program).Assembly)
-        .AddAllBuiltInBehaviors(slowRequestThresholdMs: 500);
+    typeof(Program).Assembly,
+    typeof(ApplicationAssemblyMarker).Assembly);
 ```
 
-### Advanced Configuration
+## Advanced configuration
+
+Mediator and handler lifetimes are configured independently:
 
 ```csharp
-services.AddEssentialMediator(cfg =>
+using EssentialMediator.Extensions.DependencyInjection.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+services.AddEssentialMediator(config =>
 {
-    cfg.RegisterServicesFromAssemblyContaining<Program>()
-       .RegisterServicesFromAssemblyContaining<UserHandler>()
-       .WithServiceLifetime(ServiceLifetime.Scoped);
+    config
+        .RegisterServicesFromAssemblyContaining<Program>()
+        .WithHandlerLifetime(ServiceLifetime.Scoped)
+        .WithMediatorLifetime(ServiceLifetime.Scoped);
 });
 ```
 
-## Configuration Options
+Handler lifetime defaults to `Scoped` and may be `Scoped`, `Transient`, or `Singleton` when that is appropriate for the handler's own dependencies and state.
 
-### Assembly Registration
+Mediator lifetime defaults to `Scoped`. `Scoped` and `Transient` are supported. `Singleton` mediator registration is rejected because the mediator resolves handlers and pipeline behaviors from the ambient service scope.
 
-```csharp
-services.AddEssentialMediator(cfg =>
-{
-    // Scan specific assemblies
-    cfg.RegisterServicesFromAssemblies(assembly1, assembly2);
-    
-    // Scan by type (gets assembly from type)
-    cfg.RegisterServicesFromAssemblyContaining<MyHandler>();
-    cfg.RegisterServicesFromAssemblyContaining(typeof(MyHandler));
-    
-    // Service lifetime configuration
-    cfg.WithServiceLifetime(ServiceLifetime.Scoped); // Default
-    cfg.WithServiceLifetime(ServiceLifetime.Transient);
-    cfg.WithServiceLifetime(ServiceLifetime.Singleton);
-});
-```
+`WithServiceLifetime(...)` remains only as an obsolete compatibility API. New code should use `WithHandlerLifetime(...)` and `WithMediatorLifetime(...)`.
 
-### Built-in Behaviors
+## Assembly scanning
+
+The integration discovers public, concrete implementations of:
+
+- `IRequestHandler<TRequest, TResponse>`
+- `IRequestHandler<TRequest>`
+- `INotificationHandler<TNotification>`
+
+Assembly loading problems are fail-fast. A `ReflectionTypeLoadException` is surfaced as `MediatorRegistrationException` with loader exception details instead of silently skipping broken types.
+
+## Built-in behaviors
+
+Register all built-in behaviors:
 
 ```csharp
-// Add all built-in behaviors with default settings
-services.AddEssentialMediator(Assembly.GetExecutingAssembly())
-        .AddAllBuiltInBehaviors();
-
-// Add all built-in behaviors with custom performance threshold
-services.AddEssentialMediator(Assembly.GetExecutingAssembly())
-        .AddAllBuiltInBehaviors(slowRequestThresholdMs: 1000);
-
-// Add individual behaviors
-services.AddEssentialMediator(Assembly.GetExecutingAssembly())
-        .AddLoggingBehavior()
-        .AddValidationBehavior()
-        .AddPerformanceBehavior(slowRequestThresholdMs: 500);
+services
+    .AddEssentialMediator(typeof(Program).Assembly)
+    .AddAllBuiltInBehaviors(slowRequestThresholdMs: 500);
 ```
 
-### Manual Registration
+Or register them individually:
 
 ```csharp
-// Register individual handlers manually (if needed)
-services.AddEssentialMediator()
-        .RegisterHandler<GetUserQuery, User, GetUserHandler>()
-        .RegisterNotificationHandler<UserCreatedEvent, SendEmailHandler>();
+services
+    .AddEssentialMediator(typeof(Program).Assembly)
+    .AddLoggingBehavior()
+    .AddPerformanceBehavior(slowRequestThresholdMs: 500)
+    .AddValidationBehavior();
 ```
 
-## Features
+The built-in validation behavior uses `System.ComponentModel.DataAnnotations`. It is not backed by FluentValidation.
 
-### Automatic Handler Discovery
-
-The extension automatically discovers and registers:
-
-- **Request Handlers** - `IRequestHandler<TRequest, TResponse>` and `IRequestHandler<TRequest>`
-- **Notification Handlers** - `INotificationHandler<TNotification>`
-- **Pipeline Behaviors** - `IPipelineBehavior<TRequest, TResponse>`
-
-### Service Lifetime Management
-
-Configure how handlers are registered in the DI container:
-
-```csharp
-// Scoped (default) - One instance per request
-cfg.WithServiceLifetime(ServiceLifetime.Scoped);
-
-// Transient - New instance every time
-cfg.WithServiceLifetime(ServiceLifetime.Transient);
-
-// Singleton - Single instance for application lifetime
-cfg.WithServiceLifetime(ServiceLifetime.Singleton);
-```
-
-### Error Handling
-
-The extension gracefully handles common issues:
-
-- **Missing Assemblies** - Skips assemblies that can't be loaded
-- **Invalid Handlers** - Warns about handlers that don't implement interfaces correctly
-- **Duplicate Registrations** - Prevents duplicate handler registrations
-
-## Integration Examples
-
-### ASP.NET Core Web API
+## ASP.NET Core example
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// Add EssentialMediator with all behaviors
-builder.Services.AddEssentialMediator(Assembly.GetExecutingAssembly())
-                .AddAllBuiltInBehaviors(slowRequestThresholdMs: 500);
-
-// Add FluentValidation (if using validation behavior)
-builder.Services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
+builder.Services
+    .AddEssentialMediator(typeof(Program).Assembly)
+    .AddAllBuiltInBehaviors(slowRequestThresholdMs: 500);
 
 var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-app.MapControllers();
 app.Run();
 ```
 
-### Background Services
+## Background services
+
+When using scoped handlers from a hosted/background service, create a scope and resolve `IMediator` from that scope:
 
 ```csharp
-// Register EssentialMediator for background services
-services.AddEssentialMediator(typeof(Program).Assembly);
-
-services.AddHostedService<OrderProcessingService>();
-
-public class OrderProcessingService : BackgroundService
-{
-    private readonly IServiceProvider _serviceProvider;
-
-    public OrderProcessingService(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            using var scope = _serviceProvider.CreateScope();
-            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-            
-            await mediator.Send(new ProcessOrdersCommand(), stoppingToken);
-            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
-        }
-    }
-}
+using var scope = serviceProvider.CreateScope();
+var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+await mediator.Send(new ProcessOrdersCommand(), stoppingToken);
 ```
 
-### Multiple Assemblies
+## Registration semantics
 
-```csharp
-// Register handlers from multiple assemblies
-services.AddEssentialMediator(cfg =>
-{
-    cfg.RegisterServicesFromAssemblies(
-        typeof(UserModule.Handlers.GetUserHandler).Assembly,    // User module
-        typeof(OrderModule.Handlers.CreateOrderHandler).Assembly, // Order module
-        typeof(PaymentModule.Handlers.ProcessPaymentHandler).Assembly // Payment module
-    );
-});
-```
+- exactly one request handler is expected for each request contract;
+- notifications may have zero, one, or many handlers;
+- duplicate request-handler registrations are detected at dispatch time and fail explicitly;
+- scanning the same assembly more than once is de-duplicated by the configuration path.
 
-## Best Practices
+## Related packages
 
-1. **Use Assembly Scanning** - Let the extension discover handlers automatically
-2. **Configure Lifetimes** - Choose appropriate service lifetimes for your handlers
-3. **Add Behaviors** - Use built-in behaviors for common cross-cutting concerns
-4. **Organize by Modules** - Group related handlers in separate assemblies
-5. **Validate Configuration** - Test that all expected handlers are registered
+- `EssentialMediator.Abstractions` contains contracts and message types.
+- `EssentialMediator` contains the runtime and built-in behaviors.
 
-## Troubleshooting
-
-### Common Issues
-
-**Handler Not Found Exception**
-```csharp
-// Ensure the assembly containing the handler is scanned
-services.AddEssentialMediator(typeof(MyHandler).Assembly);
-```
-
-**Multiple Handlers Exception**
-```csharp
-// Check for duplicate handler registrations
-// Only one handler should implement IRequestHandler<TRequest, TResponse>
-```
-
-**Performance Issues**
-```csharp
-// Consider service lifetimes - Singleton may be appropriate for stateless handlers
-cfg.WithServiceLifetime(ServiceLifetime.Singleton);
-```
-
-## Related Projects
-
-- **EssentialMediator.Abstractions** - Core interfaces and contracts
-- **EssentialMediator** - Core implementation with built-in behaviors
-    
-    // Scan entry/calling assembly
-    cfg.RegisterServicesFromEntryAssembly();
-    cfg.RegisterServicesFromCallingAssembly();
-    
-    // Set service lifetime
-    cfg.WithServiceLifetime(ServiceLifetime.Singleton);
-});
-```
-
-## Service Lifetimes
-
-| Lifetime | Usage | When to Use |
-|----------|-------|-------------|
-| **Scoped** (default) | One instance per request | Web APIs, typical usage |
-| **Singleton** | Single instance | Stateless handlers, performance critical |
-| **Transient** | New instance each time | Handlers with dependencies |
-
-## What Gets Registered
-
-- `IMediator` → `Mediator`
-- All `IRequestHandler<,>` implementations
-- All `IRequestHandler<>` implementations  
-- All `INotificationHandler<>` implementations
-- Handles reflection exceptions gracefully
-
-## Requirements
-
-- .NET 9.0+
-- Microsoft.Extensions.DependencyInjection.Abstractions 8.0+
-
-## Related Projects
-
-- **EssentialMediator.Abstractions** - Core interfaces
-- **EssentialMediator** - Core implementation
+For the complete API overview, examples, quality gates, changelog, security policy, and release process, see the [EssentialMediator repository](https://github.com/caiodom/essential-mediator).
