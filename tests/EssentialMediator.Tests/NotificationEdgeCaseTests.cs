@@ -12,94 +12,104 @@ public class NotificationEdgeCaseTests
     [Fact]
     public async Task Publish_WithNoHandlers_ShouldLogWarningAndComplete()
     {
-        // Arrange
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddConsole());
         services.AddScoped<IMediator, Mediator>();
 
-        var serviceProvider = services.BuildServiceProvider();
+        using var serviceProvider = services.BuildServiceProvider();
         var mediator = serviceProvider.GetRequiredService<IMediator>();
         var notification = new UnregisteredNotification { Message = "Test" };
 
-        // Act & Assert - Should not throw
         await mediator.Publish(notification);
-        // Test passes if no exception is thrown
     }
 
     [Fact]
-    public async Task Publish_WithHandlerThatThrows_ShouldLogErrorButNotThrow()
+    public async Task Publish_WithSynchronouslyThrowingHandler_ShouldPropagateOriginalException()
     {
-        // Arrange
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddConsole());
         services.AddScoped<IMediator, Mediator>();
         services.AddScoped<INotificationHandler<ErrorNotification>, ErrorNotificationHandler>();
 
-        var serviceProvider = services.BuildServiceProvider();
+        using var serviceProvider = services.BuildServiceProvider();
         var mediator = serviceProvider.GetRequiredService<IMediator>();
         var notification = new ErrorNotification { Message = "Test", ShouldThrow = true };
 
-        // Act & Assert - Should log error but not throw due to try-catch in mediator
-        await mediator.Publish(notification);
-        // Test passes if no exception is thrown - errors are logged but not propagated
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => mediator.Publish(notification));
+
+        Assert.Equal("Handler error", exception.Message);
     }
 
     [Fact]
-    public async Task Publish_WithMixedHandlers_OneThrows_ShouldLogErrorButComplete()
+    public async Task Publish_WithAsynchronouslyThrowingHandler_ShouldPropagateOriginalException()
     {
-        // Arrange
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddConsole());
         services.AddScoped<IMediator, Mediator>();
-        services.AddScoped<INotificationHandler<ErrorNotification>, ErrorNotificationHandler>();
-        services.AddScoped<INotificationHandler<ErrorNotification>, AnotherErrorNotificationHandler>();
+        services.AddScoped<INotificationHandler<AsyncErrorNotification>, AsyncErrorNotificationHandler>();
 
-        var serviceProvider = services.BuildServiceProvider();
+        using var serviceProvider = services.BuildServiceProvider();
         var mediator = serviceProvider.GetRequiredService<IMediator>();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            mediator.Publish(new AsyncErrorNotification()));
+
+        Assert.Equal("Async handler error", exception.Message);
+    }
+
+    [Fact]
+    public async Task Publish_WithMixedHandlers_WhenOneThrows_ShouldStillInvokeOtherHandlersAndPropagateFailure()
+    {
+        var services = new ServiceCollection();
+        services.AddLogging(builder => builder.AddConsole());
+        services.AddScoped<IMediator, Mediator>();
+        services.AddScoped<ErrorNotificationHandler>();
+        services.AddScoped<SuccessfulTrackingNotificationHandler>();
+        services.AddScoped<INotificationHandler<ErrorNotification>>(sp => sp.GetRequiredService<ErrorNotificationHandler>());
+        services.AddScoped<INotificationHandler<ErrorNotification>>(sp => sp.GetRequiredService<SuccessfulTrackingNotificationHandler>());
+
+        using var serviceProvider = services.BuildServiceProvider();
+        var mediator = serviceProvider.GetRequiredService<IMediator>();
+        var successfulHandler = serviceProvider.GetRequiredService<SuccessfulTrackingNotificationHandler>();
         var notification = new ErrorNotification { Message = "Test", ShouldThrow = true };
 
-        // Act & Assert - Should log error but not throw due to try-catch in mediator
-        await mediator.Publish(notification);
-        // Test passes if no exception is thrown - errors are logged but not propagated
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => mediator.Publish(notification));
+
+        Assert.Equal("Handler error", exception.Message);
+        Assert.Equal(1, successfulHandler.HandledCount);
     }
 
     [Fact]
     public async Task Publish_WithHandlerThatDoesNotThrow_ShouldComplete()
     {
-        // Arrange
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddConsole());
         services.AddScoped<IMediator, Mediator>();
         services.AddScoped<INotificationHandler<ErrorNotification>, ErrorNotificationHandler>();
 
-        var serviceProvider = services.BuildServiceProvider();
+        using var serviceProvider = services.BuildServiceProvider();
         var mediator = serviceProvider.GetRequiredService<IMediator>();
         var notification = new ErrorNotification { Message = "Test", ShouldThrow = false };
 
-        // Act & Assert - Should not throw
         await mediator.Publish(notification);
-        // Test passes if no exception is thrown
     }
 
     [Fact]
-    public async Task Publish_WithCancellationToken_ShouldLogErrorButNotThrow()
+    public async Task Publish_WithCancellationToken_ShouldPropagateCancellation()
     {
-        // Arrange
         var services = new ServiceCollection();
         services.AddLogging(builder => builder.AddConsole());
         services.AddScoped<IMediator, Mediator>();
         services.AddScoped<INotificationHandler<CancellationTestNotification>, CancellationTestNotificationHandler>();
 
-        var serviceProvider = services.BuildServiceProvider();
+        using var serviceProvider = services.BuildServiceProvider();
         var mediator = serviceProvider.GetRequiredService<IMediator>();
         var notification = new CancellationTestNotification { Message = "Test" };
 
         using var cts = new CancellationTokenSource();
-        cts.Cancel(); // Cancel immediately
+        cts.Cancel();
 
-        // Act & Assert - Should log error but not throw due to try-catch in mediator
-        await mediator.Publish(notification, cts.Token);
-        // Test passes if no exception is thrown - cancellation errors are logged but not propagated
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => mediator.Publish(notification, cts.Token));
     }
 }
 
@@ -122,16 +132,30 @@ public class ErrorNotificationHandler : INotificationHandler<ErrorNotification>
         {
             throw new InvalidOperationException("Handler error");
         }
+
         return Task.CompletedTask;
     }
 }
 
-public class AnotherErrorNotificationHandler : INotificationHandler<ErrorNotification>
+public class SuccessfulTrackingNotificationHandler : INotificationHandler<ErrorNotification>
 {
+    public int HandledCount { get; private set; }
+
     public Task Handle(ErrorNotification notification, CancellationToken cancellationToken = default)
     {
-        // This handler doesn't throw, but the other one does
+        HandledCount++;
         return Task.CompletedTask;
+    }
+}
+
+public class AsyncErrorNotification : INotification;
+
+public class AsyncErrorNotificationHandler : INotificationHandler<AsyncErrorNotification>
+{
+    public async Task Handle(AsyncErrorNotification notification, CancellationToken cancellationToken = default)
+    {
+        await Task.Yield();
+        throw new InvalidOperationException("Async handler error");
     }
 }
 
