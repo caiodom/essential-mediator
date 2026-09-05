@@ -15,10 +15,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v6
+      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
       with:
         global-json-file: global.json
 
@@ -77,21 +77,21 @@ jobs:
 
     - name: Upload coverage results
       if: ${{ always() && hashFiles('TestResults/**/coverage.cobertura.xml') != '' }}
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
       with:
         name: coverage-results
         path: TestResults/**/coverage.cobertura.xml
         if-no-files-found: error
 
     - name: Upload NuGet packages
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
       with:
         name: nuget-packages
         path: artifacts/packages/*.nupkg
         if-no-files-found: error
 
     - name: Upload NuGet symbol packages
-      uses: actions/upload-artifact@v6
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
       with:
         name: nuget-symbol-packages
         path: artifacts/packages/*.snupkg
