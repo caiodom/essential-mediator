@@ -4,7 +4,6 @@ using EssentialMediator.Abstractions.Mediation;
 using EssentialMediator.Abstractions.Messages;
 using EssentialMediator.Abstractions.Pipelines;
 using EssentialMediator.Exceptions;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace EssentialMediator.Dispatching;
@@ -28,7 +27,7 @@ internal sealed class RequestHandlerWrapper<TRequest, TResponse> : RequestHandle
         CancellationToken cancellationToken)
     {
         var typedRequest = (TRequest)request;
-        var handlers = serviceProvider.GetServices<IRequestHandler<TRequest, TResponse>>().ToArray();
+        var handlers = ServiceResolver.GetServices<IRequestHandler<TRequest, TResponse>>(serviceProvider).ToArray();
 
         if (handlers.Length == 0)
         {
@@ -45,7 +44,7 @@ internal sealed class RequestHandlerWrapper<TRequest, TResponse> : RequestHandle
             throw new MultipleHandlersException(typeof(TRequest), handlers.Length);
         }
 
-        var behaviors = serviceProvider.GetServices<IPipelineBehavior<TRequest, TResponse>>().ToArray();
+        var behaviors = ServiceResolver.GetServices<IPipelineBehavior<TRequest, TResponse>>(serviceProvider).ToArray();
 
         if (behaviors.Length > 0)
         {
@@ -84,7 +83,7 @@ internal sealed class VoidRequestHandlerWrapper<TRequest> : RequestHandlerWrappe
         CancellationToken cancellationToken)
     {
         var typedRequest = (TRequest)request;
-        var handlers = serviceProvider.GetServices<IRequestHandler<TRequest>>().ToArray();
+        var handlers = ServiceResolver.GetServices<IRequestHandler<TRequest>>(serviceProvider).ToArray();
 
         if (handlers.Length == 0)
         {
@@ -101,7 +100,7 @@ internal sealed class VoidRequestHandlerWrapper<TRequest> : RequestHandlerWrappe
             throw new MultipleHandlersException(typeof(TRequest), handlers.Length);
         }
 
-        var behaviors = serviceProvider.GetServices<IPipelineBehavior<TRequest, Unit>>().ToArray();
+        var behaviors = ServiceResolver.GetServices<IPipelineBehavior<TRequest, Unit>>(serviceProvider).ToArray();
 
         if (behaviors.Length > 0)
         {

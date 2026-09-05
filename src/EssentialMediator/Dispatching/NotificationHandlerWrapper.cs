@@ -1,6 +1,5 @@
 using EssentialMediator.Abstractions.Handlers;
 using EssentialMediator.Abstractions.Messages;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace EssentialMediator.Dispatching;
@@ -24,7 +23,7 @@ internal sealed class NotificationHandlerWrapper<TNotification> : NotificationHa
         CancellationToken cancellationToken)
     {
         var typedNotification = (TNotification)notification;
-        var handlers = serviceProvider.GetServices<INotificationHandler<TNotification>>().ToArray();
+        var handlers = ServiceResolver.GetServices<INotificationHandler<TNotification>>(serviceProvider).ToArray();
 
         if (handlers.Length == 0)
         {
