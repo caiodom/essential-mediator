@@ -1,50 +1,39 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
-		<LangVersion>latest</LangVersion>
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+  <PropertyGroup>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
-		<!-- Package Info -->
-		<PackageId>EssentialMediator</PackageId>
-		<PackageVersion>1.0.0</PackageVersion>
-		<AssemblyVersion>1.0.0.0</AssemblyVersion>
-		<FileVersion>1.0.0.0</FileVersion>
+    <!-- Package Info -->
+    <PackageId>EssentialMediator</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
 
-		<Title>EssentialMediator</Title>
-		<Description>Core implementation of EssentialMediator - a simple and efficient mediator pattern implementation for .NET</Description>
-		<Authors>Caio Henrique Domingues Leite</Authors>
-		<Copyright>Copyright © 2025 Caio Henrique Domingues Leite</Copyright>
-		<PackageLicenseExpression>MIT</PackageLicenseExpression>
-		<PackageProjectUrl>https://github.com/caiodom/essential-mediator</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/caiodom/essential-mediator</RepositoryUrl>
-		<RepositoryType>git</RepositoryType>
-		<PackageTags>mediator;cqrs;core;implementation</PackageTags>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageReleaseNotes>Core implementation with Mediator and Custom Exceptions.</PackageReleaseNotes>
+    <Title>EssentialMediator</Title>
+    <Description>Core implementation of EssentialMediator - a simple and efficient mediator pattern implementation for .NET</Description>
+    <PackageTags>mediator;cqrs;core;implementation</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>Core implementation with Mediator and Custom Exceptions.</PackageReleaseNotes>
 
-		<!-- Package debugging and provenance -->
-		<PublishRepositoryUrl>true</PublishRepositoryUrl>
-		<EmbedUntrackedSources>true</EmbedUntrackedSources>
-		<IncludeSymbols>true</IncludeSymbols>
-		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-		<DebugType>portable</DebugType>
-		<ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
-	</PropertyGroup>
+    <!-- Package debugging and provenance -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
-	</ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
+  </ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\EssentialMediator.Abstractions\EssentialMediator.Abstractions.csproj" />
-	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EssentialMediator.Abstractions\EssentialMediator.Abstractions.csproj" />
+  </ItemGroup>
 
-	<ItemGroup>
-		<None Include="README.md" Pack="true" PackagePath="\" />
-	</ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
 </Project>
