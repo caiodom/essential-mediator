@@ -1,65 +1,73 @@
 # EssentialMediator
 
-> **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete.
+Mediator runtime for .NET 10.
 
-Core implementation of EssentialMediator - Contains the main mediator implementation with optimized performance and built-in behaviors.
+This package provides the `Mediator` implementation, typed dispatch wrappers, runtime exceptions, and built-in pipeline behaviors. It references `EssentialMediator.Abstractions` automatically.
 
-## What's Included
+## What this package contains
 
-- **`Mediator`** - Main mediator implementation with caching and optimization
-- **Custom Exceptions** - `HandlerNotFoundException`, `MultipleHandlersException`, `HandlerConfigurationException`
-- **Built-in Behaviors** - Ready-to-use logging, validation, and performance monitoring behaviors
-- **Pipeline Support** - Full pipeline behavior support for cross-cutting concerns
+- `Mediator` implementation of `IMediator`
+- typed cached request and notification dispatch wrappers
+- `HandlerNotFoundException`
+- `MultipleHandlersException`
+- `HandlerConfigurationException`
+- logging pipeline behavior
+- performance pipeline behavior
+- DataAnnotations validation pipeline behavior
 
-## Features
+## Dispatch behavior
 
-- **High Performance** - Optimized with `ConcurrentDictionary` caching for reflection calls
-- **Memory Efficient** - Minimal allocations and GC pressure
-- **Parallel Execution** - Notification handlers run in parallel by default
-- **Exception Handling** - Detailed custom exceptions for better debugging
+Request dispatch resolves exactly one handler for a request. Missing handlers and multiple handlers fail explicitly.
 
-## Purpose
+Typed dispatch wrappers are cached per message contract. Reflection is used when a wrapper is first created; normal request and notification dispatch calls the typed interfaces directly and does not use `MethodInfo.Invoke` in the hot path.
 
-This package contains the core implementation of EssentialMediator with:
+Notification handlers are started without serially awaiting each handler and are then awaited together. Synchronous failures, asynchronous failures, and cancellation are propagated to the caller.
 
-- **Optimized mediator logic** with performance enhancements
-- **Custom exceptions** for better debugging experience
-- **Built-in behaviors** for common cross-cutting concerns
-- **Lightweight dependencies** - only depends on abstractions and Microsoft.Extensions packages
+## Built-in behaviors
 
-## Built-in Behaviors
+### Logging
 
-### LoggingBehavior
-Logs request handling with execution time and error tracking.
+`LoggingBehavior<TRequest, TResponse>` logs request execution and failures through `Microsoft.Extensions.Logging`.
 
-### ValidationBehavior  
-Integration with FluentValidation for automatic request validation.
+### Performance
 
-### PerformanceBehavior
-Monitors and logs slow requests based on configurable thresholds.
+`PerformanceBehavior<TRequest, TResponse>` measures request duration and logs a warning when the configured slow-request threshold is exceeded.
 
-## Usage
-
-This project is typically used together with:
-
-- **EssentialMediator.Abstractions** - For interfaces (auto-referenced)
-- **EssentialMediator.Extensions.DependencyInjection** - For registration (recommended)
+The threshold is supplied through `PerformanceBehaviorOptions`. When using the Microsoft DI integration, configure it with:
 
 ```csharp
-// Recommended: Use with DI extensions
-services.AddEssentialMediator(typeof(Program).Assembly)
-        .AddAllBuiltInBehaviors(slowRequestThresholdMs: 500);
-
-// Direct usage (manual setup)
-var services = new ServiceCollection();
-services.AddLogging();
-services.AddScoped<IMediator, Mediator>();
-
-var mediator = serviceProvider.GetRequiredService<IMediator>();
-var result = await mediator.Send(new GetUserQuery { Id = 1 });
+services.AddPerformanceBehavior(slowRequestThresholdMs: 250);
 ```
 
-## Related Projects
+### Validation
 
-- **EssentialMediator.Abstractions** - Core interfaces and contracts
-- **EssentialMediator.Extensions.DependencyInjection** - DI registration extensions
+`ValidationBehavior<TRequest, TResponse>` uses `System.ComponentModel.DataAnnotations`.
+
+It does **not** use FluentValidation. Applications that prefer FluentValidation can implement a custom `IPipelineBehavior<TRequest, TResponse>`.
+
+## Recommended registration
+
+For most applications, install `EssentialMediator.Extensions.DependencyInjection` and register the runtime through Microsoft DI:
+
+```csharp
+using EssentialMediator.Extensions;
+
+services
+    .AddEssentialMediator(typeof(Program).Assembly)
+    .AddLoggingBehavior()
+    .AddPerformanceBehavior(slowRequestThresholdMs: 500)
+    .AddValidationBehavior();
+```
+
+The mediator runtime itself depends on `IServiceProvider`; Microsoft DI-specific assembly scanning and registration live in the separate DI extensions package.
+
+## Performance
+
+A reproducible BenchmarkDotNet suite is included in the repository. The project intentionally does not publish performance claims based on GitHub-hosted runner timings; compare results on the same hardware and runtime before drawing conclusions.
+
+## Related packages
+
+- `EssentialMediator.Abstractions` contains the contracts and message types.
+- `EssentialMediator.Extensions.DependencyInjection` provides Microsoft DI registration and assembly scanning.
+
+For the complete API overview, examples, benchmarks, changelog, and release policy, see the [EssentialMediator repository](https://github.com/caiodom/essential-mediator).
