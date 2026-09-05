@@ -3,7 +3,8 @@ set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 package_dir="$repo_root/artifacts/packages"
-smoke_dir="$repo_root/artifacts/package-smoke"
+smoke_root="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"
+smoke_dir="$smoke_root/essential-mediator-package-smoke"
 consumer_dir="$smoke_dir/Consumer"
 consumer_project="$consumer_dir/Consumer.csproj"
 nuget_config="$smoke_dir/NuGet.config"
