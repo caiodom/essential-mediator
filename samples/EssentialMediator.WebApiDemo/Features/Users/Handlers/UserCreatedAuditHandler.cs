@@ -14,7 +14,7 @@ public class UserCreatedAuditHandler : INotificationHandler<UserCreatedNotificat
 
     public async Task Handle(UserCreatedNotification notification, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("AUDIT: User created - ID: {UserId}, Name: {UserName}, Email: {UserEmail}, At: {CreatedAt}", 
+        _logger.LogInformation("AUDIT: User created - ID: {UserId}, Name: {UserName}, Email: {UserEmail}, At: {CreatedAt}",
             notification.UserId, notification.UserName, notification.UserEmail, notification.CreatedAt);
 
         // Simulate audit log writing

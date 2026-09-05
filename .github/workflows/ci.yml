@@ -28,6 +28,9 @@ jobs:
     - name: Restore benchmarks
       run: dotnet restore benchmarks/EssentialMediator.Benchmarks/EssentialMediator.Benchmarks.csproj
 
+    - name: Verify formatting
+      run: dotnet format whitespace EssentialMediator.sln --no-restore --verify-no-changes
+
     - name: Build with warnings as errors
       run: dotnet build EssentialMediator.sln --no-restore --configuration Release --warnaserror
 

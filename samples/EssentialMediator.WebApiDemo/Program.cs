@@ -12,20 +12,21 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { 
-        Title = "EssentialMediator WebAPI Demo", 
+    c.SwaggerDoc("v1", new()
+    {
+        Title = "EssentialMediator WebAPI Demo",
         Version = "v1",
         Description = "Demo Test",
         Contact = new() { Name = "EssentialMediator", Url = new Uri("https://github.com/caiodom/essential-mediator") }
     });
-    
+
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     if (File.Exists(xmlPath))
     {
         c.IncludeXmlComments(xmlPath);
     }
-    
+
     c.EnableAnnotations();
     c.UseInlineDefinitionsForEnums();
 });
@@ -53,7 +54,7 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "EssentialMediator WebAPI Demo v1");
-    c.RoutePrefix = string.Empty; 
+    c.RoutePrefix = string.Empty;
     c.DocumentTitle = "EssentialMediator WebAPI Demo";
     c.DefaultModelsExpandDepth(-1);
 });

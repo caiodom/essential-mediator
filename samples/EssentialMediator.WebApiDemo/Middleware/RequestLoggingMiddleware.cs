@@ -18,7 +18,7 @@ public class RequestLoggingMiddleware
         var stopwatch = Stopwatch.StartNew();
         var requestId = Guid.NewGuid().ToString("N")[..8];
 
-        _logger.LogInformation("Request {RequestId}: {Method} {Path} started", 
+        _logger.LogInformation("Request {RequestId}: {Method} {Path} started",
             requestId, context.Request.Method, context.Request.Path);
 
         try
@@ -28,7 +28,7 @@ public class RequestLoggingMiddleware
         finally
         {
             stopwatch.Stop();
-            _logger.LogInformation("Request {RequestId}: {Method} {Path} completed in {ElapsedMs}ms with status {StatusCode}", 
+            _logger.LogInformation("Request {RequestId}: {Method} {Path} completed in {ElapsedMs}ms with status {StatusCode}",
                 requestId, context.Request.Method, context.Request.Path, stopwatch.ElapsedMilliseconds, context.Response.StatusCode);
         }
     }

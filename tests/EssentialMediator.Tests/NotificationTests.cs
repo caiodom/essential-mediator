@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace EssentialMediator.Tests;
+
 public class NotificationTests
 {
     private IServiceProvider CreateServiceProvider()

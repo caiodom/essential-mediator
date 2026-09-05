@@ -19,7 +19,7 @@ public class GetAllUsersQueryHandler : IRequestHandler<GetAllUsersQuery, List<Us
 
     public async Task<List<UserDto>> Handle(GetAllUsersQuery request, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Retrieving all users with filters - IsActive: {IsActive}, SearchTerm: {SearchTerm}", 
+        _logger.LogInformation("Retrieving all users with filters - IsActive: {IsActive}, SearchTerm: {SearchTerm}",
             request.IsActive, request.SearchTerm);
 
         var query = _context.Users.AsQueryable();

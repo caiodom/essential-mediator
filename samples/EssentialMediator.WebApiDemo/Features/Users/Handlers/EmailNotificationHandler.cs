@@ -3,7 +3,7 @@ using EssentialMediator.WebApiDemo.Features.Users.Notifications;
 
 namespace EssentialMediator.WebApiDemo.Features.Users.Handlers;
 
-public class EmailNotificationHandler : 
+public class EmailNotificationHandler :
     INotificationHandler<UserCreatedNotification>,
     INotificationHandler<UserUpdatedNotification>,
     INotificationHandler<UserDeletedNotification>
@@ -17,7 +17,7 @@ public class EmailNotificationHandler :
 
     public async Task Handle(UserCreatedNotification notification, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Sending welcome email to {UserEmail} for user {UserName} (ID: {UserId})", 
+        _logger.LogInformation("Sending welcome email to {UserEmail} for user {UserName} (ID: {UserId})",
             notification.UserEmail, notification.UserName, notification.UserId);
 
         // Simulate email sending
@@ -28,7 +28,7 @@ public class EmailNotificationHandler :
 
     public async Task Handle(UserUpdatedNotification notification, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Sending profile update notification to {UserEmail} for user {UserName} (ID: {UserId})", 
+        _logger.LogInformation("Sending profile update notification to {UserEmail} for user {UserName} (ID: {UserId})",
             notification.UserEmail, notification.UserName, notification.UserId);
 
         // Simulate email sending
@@ -39,7 +39,7 @@ public class EmailNotificationHandler :
 
     public async Task Handle(UserDeletedNotification notification, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("Sending goodbye email to {UserEmail} for user {UserName} (ID: {UserId})", 
+        _logger.LogInformation("Sending goodbye email to {UserEmail} for user {UserName} (ID: {UserId})",
             notification.UserEmail, notification.UserName, notification.UserId);
 
         // Simulate email sending
