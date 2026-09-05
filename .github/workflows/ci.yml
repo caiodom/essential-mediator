@@ -37,6 +37,13 @@ jobs:
         --collect:"XPlat Code Coverage"
         --results-directory ./TestResults
 
+    - name: Enforce coverage thresholds
+      run: >-
+        python3 scripts/check-coverage.py
+        --pattern "TestResults/**/coverage.cobertura.xml"
+        --min-line 90
+        --min-branch 80
+
     - name: Pack EssentialMediator.Abstractions
       run: >-
         dotnet pack src/EssentialMediator.Abstractions/EssentialMediator.Abstractions.csproj
@@ -59,6 +66,7 @@ jobs:
         --output ./artifacts/packages
 
     - name: Upload coverage results
+      if: ${{ always() && hashFiles('TestResults/**/coverage.cobertura.xml') != '' }}
       uses: actions/upload-artifact@v4
       with:
         name: coverage-results
