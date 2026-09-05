@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <EnablePackageValidation>true</EnablePackageValidation>
 
     <!-- Package Metadata -->
     <PackageId>EssentialMediator.Extensions.DependencyInjection</PackageId>
