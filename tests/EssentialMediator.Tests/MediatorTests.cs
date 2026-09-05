@@ -98,7 +98,7 @@ public class MediatorTests
         services.AddLogging(builder => builder.AddConsole());
         services.AddScoped<IMediator, Mediator>();
 
-      
+
         services.AddScoped<IRequestHandler<TestRequest, string>, TestRequestHandler>();
         services.AddScoped<IRequestHandler<TestRequest, string>, DuplicateTestRequestHandler>();
 

@@ -12,12 +12,12 @@ public class TestPerformanceBehavior<TRequest, TResponse> : IPipelineBehavior<TR
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        
+
         var response = await next();
-        
+
         stopwatch.Stop();
         PerformanceLogs.Add($"{typeof(TRequest).Name} took {stopwatch.ElapsedMilliseconds}ms");
-        
+
         return response;
     }
 }

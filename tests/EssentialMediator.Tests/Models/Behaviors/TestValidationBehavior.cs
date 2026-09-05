@@ -28,7 +28,7 @@ public class TestValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRe
         }
 
         ValidationLogs.Add($"Validation passed for {requestName}");
-        
+
         return await next();
     }
 }
