@@ -75,6 +75,9 @@ jobs:
         --configuration Release
         --output ./artifacts/packages
 
+    - name: Smoke test NuGet packages
+      run: bash scripts/smoke-test-packages.sh
+
     - name: Upload coverage results
       if: ${{ always() && hashFiles('TestResults/**/coverage.cobertura.xml') != '' }}
       uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
