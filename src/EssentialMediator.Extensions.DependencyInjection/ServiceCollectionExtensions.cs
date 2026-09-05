@@ -67,6 +67,7 @@ public static class ServiceCollectionExtensions
         ServiceLifetime handlerLifetime,
         ServiceLifetime mediatorLifetime)
     {
+        ValidateMediatorLifetime(mediatorLifetime);
         RegisterService(services, typeof(IMediator), typeof(Mediator), mediatorLifetime);
 
         var uniqueAssemblies = new HashSet<Assembly>(assemblies);
@@ -77,6 +78,15 @@ public static class ServiceCollectionExtensions
         }
 
         return services;
+    }
+
+    private static void ValidateMediatorLifetime(ServiceLifetime mediatorLifetime)
+    {
+        if (mediatorLifetime == ServiceLifetime.Singleton)
+        {
+            throw new InvalidOperationException(
+                "EssentialMediator cannot be registered as Singleton when using Microsoft.Extensions.DependencyInjection because the mediator resolves handlers and pipeline behaviors from the ambient service scope. Use Scoped (recommended) or Transient.");
+        }
     }
 
     private static void RegisterHandlers(

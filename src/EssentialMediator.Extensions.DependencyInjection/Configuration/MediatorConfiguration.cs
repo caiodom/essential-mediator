@@ -16,7 +16,9 @@ public class MediatorConfiguration
     public ServiceLifetime HandlerLifetime { get; set; } = ServiceLifetime.Scoped;
 
     /// <summary>
-    /// Gets or sets the service lifetime for <see cref="EssentialMediator.Mediation.IMediator"/>. Default is Scoped.
+    /// Gets or sets the service lifetime for <see cref="EssentialMediator.Mediation.IMediator"/>.
+    /// Default is Scoped. Scoped and Transient are supported by the Microsoft DI integration;
+    /// Singleton is rejected because the mediator resolves handlers and pipeline behaviors from the ambient scope.
     /// </summary>
     public ServiceLifetime MediatorLifetime { get; set; } = ServiceLifetime.Scoped;
 
@@ -79,6 +81,7 @@ public class MediatorConfiguration
 
     /// <summary>
     /// Sets the mediator lifetime without changing handler lifetimes.
+    /// Scoped is recommended and Transient is supported. Singleton is rejected during service registration.
     /// </summary>
     public MediatorConfiguration WithMediatorLifetime(ServiceLifetime lifetime)
     {
@@ -88,6 +91,7 @@ public class MediatorConfiguration
 
     /// <summary>
     /// Sets both mediator and handler lifetimes for backward compatibility.
+    /// Singleton mediator lifetime is rejected during service registration.
     /// </summary>
     [Obsolete("Use WithHandlerLifetime and WithMediatorLifetime to configure lifetimes independently.")]
     public MediatorConfiguration WithServiceLifetime(ServiceLifetime lifetime)

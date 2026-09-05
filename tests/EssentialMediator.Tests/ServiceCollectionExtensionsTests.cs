@@ -41,7 +41,8 @@ public class ServiceCollectionExtensionsTests
         services.AddEssentialMediator(cfg =>
         {
             cfg.RegisterServicesFromAssemblyContaining<TestRequest>();
-            cfg.WithServiceLifetime(ServiceLifetime.Singleton);
+            cfg.WithHandlerLifetime(ServiceLifetime.Singleton);
+            cfg.WithMediatorLifetime(ServiceLifetime.Transient);
         });
         var serviceProvider = services.BuildServiceProvider();
 
@@ -49,7 +50,8 @@ public class ServiceCollectionExtensionsTests
         var mediator1 = serviceProvider.GetService<IMediator>();
         var mediator2 = serviceProvider.GetService<IMediator>();
         Assert.NotNull(mediator1);
-        Assert.Same(mediator1, mediator2); // Should be singleton
+        Assert.NotNull(mediator2);
+        Assert.NotSame(mediator1, mediator2);
     }
 
     [Fact]
@@ -199,32 +201,39 @@ public class ServiceCollectionExtensionsTests
     public void AddEssentialMediator_WithDifferentLifetimes_ShouldRespectLifetime()
     {
         // Arrange & Act
-        var services1 = new ServiceCollection();
-        services1.AddLogging();
-        services1.AddEssentialMediator(cfg =>
+        var scopedServices = new ServiceCollection();
+        scopedServices.AddLogging();
+        scopedServices.AddEssentialMediator(cfg =>
         {
             cfg.RegisterServicesFromAssemblyContaining<TestRequest>();
-            cfg.WithServiceLifetime(ServiceLifetime.Singleton);
+            cfg.WithHandlerLifetime(ServiceLifetime.Singleton);
+            cfg.WithMediatorLifetime(ServiceLifetime.Scoped);
         });
 
-        var services2 = new ServiceCollection();
-        services2.AddLogging();
-        services2.AddEssentialMediator(cfg =>
+        var transientServices = new ServiceCollection();
+        transientServices.AddLogging();
+        transientServices.AddEssentialMediator(cfg =>
         {
             cfg.RegisterServicesFromAssemblyContaining<TestRequest>();
-            cfg.WithServiceLifetime(ServiceLifetime.Transient);
+            cfg.WithHandlerLifetime(ServiceLifetime.Singleton);
+            cfg.WithMediatorLifetime(ServiceLifetime.Transient);
         });
 
         // Assert
-        var sp1 = services1.BuildServiceProvider();
-        var mediator1a = sp1.GetService<IMediator>();
-        var mediator1b = sp1.GetService<IMediator>();
-        Assert.Same(mediator1a, mediator1b); // Singleton
+        var scopedProvider = scopedServices.BuildServiceProvider();
+        using var scope1 = scopedProvider.CreateScope();
+        using var scope2 = scopedProvider.CreateScope();
 
-        var sp2 = services2.BuildServiceProvider();
-        var mediator2a = sp2.GetService<IMediator>();
-        var mediator2b = sp2.GetService<IMediator>();
-        Assert.NotSame(mediator2a, mediator2b); // Transient
+        var scopedMediator1a = scope1.ServiceProvider.GetService<IMediator>();
+        var scopedMediator1b = scope1.ServiceProvider.GetService<IMediator>();
+        var scopedMediator2 = scope2.ServiceProvider.GetService<IMediator>();
+        Assert.Same(scopedMediator1a, scopedMediator1b);
+        Assert.NotSame(scopedMediator1a, scopedMediator2);
+
+        var transientProvider = transientServices.BuildServiceProvider();
+        var transientMediator1 = transientProvider.GetService<IMediator>();
+        var transientMediator2 = transientProvider.GetService<IMediator>();
+        Assert.NotSame(transientMediator1, transientMediator2);
     }
 
     [Fact]
