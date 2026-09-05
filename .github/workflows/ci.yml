@@ -15,10 +15,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v6
       with:
         dotnet-version: 10.0.x
 
@@ -77,21 +77,21 @@ jobs:
 
     - name: Upload coverage results
       if: ${{ always() && hashFiles('TestResults/**/coverage.cobertura.xml') != '' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: coverage-results
         path: TestResults/**/coverage.cobertura.xml
         if-no-files-found: error
 
     - name: Upload NuGet packages
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: nuget-packages
         path: artifacts/packages/*.nupkg
         if-no-files-found: error
 
     - name: Upload NuGet symbol packages
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: nuget-symbol-packages
         path: artifacts/packages/*.snupkg
