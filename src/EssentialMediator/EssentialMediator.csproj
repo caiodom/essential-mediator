@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -12,10 +12,10 @@
     <FileVersion>1.0.0.0</FileVersion>
 
     <Title>EssentialMediator</Title>
-    <Description>Core implementation of EssentialMediator - a simple and efficient mediator pattern implementation for .NET</Description>
-    <PackageTags>mediator;cqrs;core;implementation</PackageTags>
+    <Description>Mediator runtime for .NET 10 with typed dispatch, notifications, pipeline behaviors, and built-in logging, performance, and DataAnnotations validation.</Description>
+    <PackageTags>dotnet;mediator;cqrs;pipeline;clean-architecture</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Core implementation with Mediator and Custom Exceptions.</PackageReleaseNotes>
+    <PackageReleaseNotes>Initial stable release. See https://github.com/caiodom/essential-mediator/blob/main/CHANGELOG.md for details.</PackageReleaseNotes>
 
     <!-- Package debugging and provenance -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
