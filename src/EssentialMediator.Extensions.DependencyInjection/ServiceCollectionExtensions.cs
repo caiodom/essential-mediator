@@ -1,6 +1,7 @@
 ﻿using EssentialMediator.Abstractions.Handlers;
 using EssentialMediator.Abstractions.Pipelines;
 using EssentialMediator.Extensions.DependencyInjection.Configuration;
+using EssentialMediator.Extensions.DependencyInjection.Exceptions;
 using EssentialMediator.Mediation;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
@@ -83,24 +84,25 @@ public static class ServiceCollectionExtensions
         Assembly assembly,
         ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
     {
+        ArgumentNullException.ThrowIfNull(assembly);
+
+        Type[] assemblyTypes;
+
         try
         {
-            var handlerTypes = assembly.GetTypes()
-                .Where(t => t.IsClass && !t.IsAbstract && t.IsPublic)
-                .ToList();
-
-            RegisterRequestHandlers(services, handlerTypes, serviceLifetime);
-            RegisterNotificationHandlers(services, handlerTypes, serviceLifetime);
+            assemblyTypes = assembly.GetTypes();
         }
         catch (ReflectionTypeLoadException ex)
         {
-            var loadableTypes = ex.Types.Where(t => t != null).Cast<Type>().ToList();
-            if (loadableTypes.Any())
-            {
-                RegisterRequestHandlers(services, loadableTypes, serviceLifetime);
-                RegisterNotificationHandlers(services, loadableTypes, serviceLifetime);
-            }
+            throw new MediatorRegistrationException(assembly, ex);
         }
+
+        var handlerTypes = assemblyTypes
+            .Where(type => type.IsClass && !type.IsAbstract && type.IsPublic)
+            .ToArray();
+
+        RegisterRequestHandlers(services, handlerTypes, serviceLifetime);
+        RegisterNotificationHandlers(services, handlerTypes, serviceLifetime);
     }
 
     private static void RegisterRequestHandlers(
@@ -110,20 +112,14 @@ public static class ServiceCollectionExtensions
     {
         foreach (var type in types)
         {
-            try
-            {
-                var interfaces = type.GetInterfaces()
-                    .Where(i => i.IsGenericType && RequestHandlerTypes.Contains(i.GetGenericTypeDefinition()))
-                    .ToList();
+            var interfaces = type.GetInterfaces()
+                .Where(@interface =>
+                    @interface.IsGenericType
+                    && RequestHandlerTypes.Contains(@interface.GetGenericTypeDefinition()));
 
-                foreach (var @interface in interfaces)
-                {
-                    RegisterService(services, @interface, type, serviceLifetime);
-                }
-            }
-            catch (Exception)
+            foreach (var @interface in interfaces)
             {
-                continue;
+                RegisterService(services, @interface, type, serviceLifetime);
             }
         }
     }
@@ -135,20 +131,14 @@ public static class ServiceCollectionExtensions
     {
         foreach (var type in types)
         {
-            try
-            {
-                var interfaces = type.GetInterfaces()
-                    .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == NotificationHandlerType)
-                    .ToList();
+            var interfaces = type.GetInterfaces()
+                .Where(@interface =>
+                    @interface.IsGenericType
+                    && @interface.GetGenericTypeDefinition() == NotificationHandlerType);
 
-                foreach (var @interface in interfaces)
-                {
-                    RegisterService(services, @interface, type, serviceLifetime);
-                }
-            }
-            catch
+            foreach (var @interface in interfaces)
             {
-                continue;
+                RegisterService(services, @interface, type, serviceLifetime);
             }
         }
     }
