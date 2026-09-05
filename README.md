@@ -1,1024 +1,309 @@
 # EssentialMediator
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![.NET 9.0](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com/)
+[![.NET 10](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
 
+A small mediator implementation for .NET 10 with typed request/response dispatch, notifications, pipeline behaviors, and optional Microsoft dependency-injection integration.
 
-> **Under Construction** - This project is currently under active development. APIs may change and features may be incomplete.
+> **Status:** active development. The public API is usable, but the project has not published an official GitHub release yet.
 
-A simple, lightweight, and efficient implementation of the Mediator pattern for .NET, designed for simplicity and enhanced functionality with modular architecture.
+## Why EssentialMediator
 
-## Features
+EssentialMediator keeps the contracts, runtime, and Microsoft DI integration in separate projects so applications can depend only on the layer they need.
 
-- **Request/Response Pattern** - Type-safe request handling with automatic validation
-- **Notification Pattern** - Publish events to multiple handlers (parallel execution)
-- **Pipeline Behaviors** - Cross-cutting concerns (logging, validation, performance monitoring)
-- **Custom Exceptions** - Clear error messages for better debugging experience
-- **Modular Architecture** - Abstractions layer for clean dependency management
-- **High Performance** - Optimized with caching and efficient handler resolution
-- **Flexible DI** - Configurable service lifetimes and advanced configuration
-- **Built-in Behaviors** - Ready-to-use logging, validation, and performance behaviors
+- **Typed requests and responses** with `IRequest<TResponse>` and `IRequestHandler<TRequest, TResponse>`
+- **Void-style commands** with `IRequest` and `IRequestHandler<TRequest>`
+- **Notifications** with multiple handlers executed concurrently
+- **Pipeline behaviors** for cross-cutting concerns
+- **Built-in logging, DataAnnotations validation, and performance monitoring behaviors**
+- **Container-neutral runtime** based on `IServiceProvider`
+- **Microsoft DI integration** with assembly scanning and configurable lifetimes
+- **Fail-fast registration diagnostics** when an assembly cannot be scanned correctly
+- **Typed dispatch-wrapper caching** without `MethodInfo.Invoke` in the request/notification hot path
+- **Reproducible BenchmarkDotNet suite** for dispatch overhead and allocations
 
-## Projects Structure
+## Project structure
 
-EssentialMediator is built with a clean, modular architecture:
+| Project | Purpose |
+| --- | --- |
+| `EssentialMediator.Abstractions` | Interfaces, message contracts, handlers, pipeline contracts, and `Unit` |
+| `EssentialMediator` | Mediator runtime, typed dispatch wrappers, built-in behaviors, and runtime exceptions |
+| `EssentialMediator.Extensions.DependencyInjection` | Microsoft DI registration, assembly scanning, and lifetime configuration |
+| `EssentialMediator.Tests` | Unit and regression tests |
+| `EssentialMediator.Benchmarks` | BenchmarkDotNet performance and allocation benchmarks |
+| `EssentialMediator.WebApiDemo` | Example ASP.NET Core application |
 
-### Core Projects
+## Requirements
 
-**EssentialMediator.Abstractions** - Core interfaces and contracts (zero dependencies)
-- `IMediator`, `IRequest<T>`, `INotification`
-- `IRequestHandler<,>`, `INotificationHandler<>`
-- `IPipelineBehavior<,>`, `Unit` type
+- .NET 10 SDK
 
-**EssentialMediator** - Core implementation
-- Optimized `Mediator` class with caching
-- Custom exceptions (`HandlerNotFoundException`, `MultipleHandlersException`)
-- Built-in behaviors (Logging, Validation, Performance)
-
-**EssentialMediator.Extensions.DependencyInjection** - Microsoft DI integration
-- `AddEssentialMediator()` extensions
-- Advanced configuration options
-- Automatic handler registration
-
-### Benefits of Modular Design
-
-- Reference only abstractions in your domain layer
-- Keep implementation details separate
-- Easy unit testing with minimal dependencies
-- Clean architecture compliance
-
-## Getting Started
-
-### Setup from Source
-
-Clone the repository and build the project:
+Until an official package release is published, build or reference the projects from source.
 
 ```bash
 git clone https://github.com/caiodom/essential-mediator.git
 cd essential-mediator
-dotnet build
+dotnet build EssentialMediator.sln -c Release
 ```
 
-### Basic Registration
+## Registration with Microsoft DI
 
-```csharp
-// Simple registration by scanning assemblies for handlers
-services.AddEssentialMediator(typeof(Program).Assembly);
-
-// Or scan multiple assemblies
-services.AddEssentialMediator(
-    typeof(Program).Assembly,
-    typeof(SomeOtherAssemblyType).Assembly
-);
-```
-
-### Advanced Configuration
-
-```csharp
-services.AddEssentialMediator(cfg =>
-{
-    cfg.RegisterServicesFromAssemblyContaining<Program>()
-       .RegisterServicesFromAssemblies(Assembly.GetExecutingAssembly())
-       .WithServiceLifetime(ServiceLifetime.Scoped);
-});
-
-// Add built-in behaviors
-services.AddEssentialMediator(Assembly.GetExecutingAssembly())
-        .AddAllBuiltInBehaviors(slowRequestThresholdMs: 500);
-```
-
-## Usage Examples
-
-### Request/Response Pattern
-
-```csharp
-// Define a request
-public class GetUserQuery : IRequest<User>
-{
-    public int UserId { get; set; }
-}
-
-// Create a handler
-public class GetUserHandler : IRequestHandler<GetUserQuery, User>
-{
-    private readonly IUserRepository _userRepository;
-
-    public GetUserHandler(IUserRepository userRepository)
-    {
-        _userRepository = userRepository;
-    }
-
-    public async Task<User> Handle(GetUserQuery request, CancellationToken cancellationToken)
-    {
-        return await _userRepository.GetByIdAsync(request.UserId, cancellationToken);
-    }
-}
-
-// Use in controller/service
-[ApiController]
-[Route("api/[controller]")]
-public class UsersController : ControllerBase
-{
-    private readonly IMediator _mediator;
-
-    public UsersController(IMediator mediator) => _mediator = mediator;
-
-    [HttpGet("{id}")]
-    public async Task<ActionResult<User>> GetUser(int id, CancellationToken cancellationToken)
-    {
-        var user = await _mediator.Send(new GetUserQuery { UserId = id }, cancellationToken);
-        return Ok(user);
-    }
-}
-```
-
-### Commands (Void Response)
-
-```csharp
-// Define a command
-public class DeleteUserCommand : IRequest
-{
-    public int UserId { get; set; }
-}
-
-// Create a handler
-public class DeleteUserHandler : IRequestHandler<DeleteUserCommand>
-{
-    private readonly IUserRepository _userRepository;
-
-    public DeleteUserHandler(IUserRepository userRepository)
-    {
-        _userRepository = userRepository;
-    }
-
-    public async Task<Unit> Handle(DeleteUserCommand request, CancellationToken cancellationToken)
-    {
-        await _userRepository.DeleteAsync(request.UserId, cancellationToken);
-        return Unit.Value; // or just return Unit.Value
-    }
-}
-
-// Usage
-await _mediator.Send(new DeleteUserCommand { UserId = 123 });
-```
-
-### Notifications (Events)
-
-```csharp
-// Define a notification
-public class UserCreatedEvent : INotification
-{
-    public User User { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-}
-
-// Multiple handlers can handle the same notification
-public class SendWelcomeEmailHandler : INotificationHandler<UserCreatedEvent>
-{
-    private readonly IEmailService _emailService;
-
-    public SendWelcomeEmailHandler(IEmailService emailService)
-    {
-        _emailService = emailService;
-    }
-
-    public async Task Handle(UserCreatedEvent notification, CancellationToken cancellationToken)
-    {
-        await _emailService.SendWelcomeEmailAsync(notification.User.Email, cancellationToken);
-    }
-}
-
-public class UpdateAuditLogHandler : INotificationHandler<UserCreatedEvent>
-{
-    private readonly IAuditService _auditService;
-
-    public UpdateAuditLogHandler(IAuditService auditService)
-    {
-        _auditService = auditService;
-    }
-
-    public async Task Handle(UserCreatedEvent notification, CancellationToken cancellationToken)
-    {
-        await _auditService.LogUserCreationAsync(notification.User, cancellationToken);
-    }
-}
-
-// Usage - all handlers will be executed in parallel
-await _mediator.Publish(new UserCreatedEvent { User = user });
-```
-
-## Pipeline Behaviors
-
-Pipeline behaviors provide a powerful way to implement cross-cutting concerns that execute around your handlers:
-
-### Built-in Behaviors
-
-EssentialMediator includes ready-to-use behaviors:
-
-```csharp
-// Add all built-in behaviors
-services.AddEssentialMediator(Assembly.GetExecutingAssembly())
-        .AddAllBuiltInBehaviors(slowRequestThresholdMs: 500);
-
-// Or add individual behaviors
-services.AddScoped(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
-services.AddScoped(typeof(IPipelineBehavior<,>), typeof(PerformanceBehavior<,>));
-services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-```
-
-### Custom Behavior Examples
-
-#### Logging Behavior
-```csharp
-public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
-{
-    private readonly ILogger<LoggingBehavior<TRequest, TResponse>> _logger;
-
-    public LoggingBehavior(ILogger<LoggingBehavior<TRequest, TResponse>> logger)
-    {
-        _logger = logger;
-    }
-
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
-    {
-        var requestName = typeof(TRequest).Name;
-        _logger.LogInformation("Handling request {RequestName}", requestName);
-        
-        var stopwatch = Stopwatch.StartNew();
-        
-        try
-        {
-            var response = await next();
-            stopwatch.Stop();
-            
-            _logger.LogInformation("Request {RequestName} handled successfully in {ElapsedMs}ms", 
-                requestName, stopwatch.ElapsedMilliseconds);
-            
-            return response;
-        }
-        catch (Exception ex)
-        {
-            stopwatch.Stop();
-            _logger.LogError(ex, "Request {RequestName} failed after {ElapsedMs}ms", 
-                requestName, stopwatch.ElapsedMilliseconds);
-            throw;
-        }
-    }
-}
-```
-
-#### Validation Behavior (with FluentValidation)
-```csharp
-public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
-{
-    private readonly IEnumerable<IValidator<TRequest>> _validators;
-
-    public ValidationBehavior(IEnumerable<IValidator<TRequest>> validators)
-    {
-        _validators = validators;
-    }
-
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
-    {
-        if (_validators.Any())
-        {
-            var context = new ValidationContext<TRequest>(request);
-            var validationResults = await Task.WhenAll(
-                _validators.Select(v => v.ValidateAsync(context, cancellationToken)));
-
-            var failures = validationResults
-                .Where(r => !r.IsValid)
-                .SelectMany(r => r.Errors)
-                .ToList();
-
-            if (failures.Any())
-            {
-                throw new ValidationException(failures);
-            }
-        }
-
-        return await next();
-    }
-}
-```
-
-#### Performance Monitoring Behavior
-```csharp
-public class PerformanceBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
-{
-    private readonly ILogger<PerformanceBehavior<TRequest, TResponse>> _logger;
-    private readonly int _slowRequestThresholdMs;
-
-    public PerformanceBehavior(ILogger<PerformanceBehavior<TRequest, TResponse>> logger, 
-                             int slowRequestThresholdMs = 500)
-    {
-        _logger = logger;
-        _slowRequestThresholdMs = slowRequestThresholdMs;
-    }
-
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
-    {
-        var stopwatch = Stopwatch.StartNew();
-        var response = await next();
-        stopwatch.Stop();
-
-        if (stopwatch.ElapsedMilliseconds > _slowRequestThresholdMs)
-        {
-            var requestName = typeof(TRequest).Name;
-            _logger.LogWarning("Slow request detected: {RequestName} took {ElapsedMs}ms", 
-                requestName, stopwatch.ElapsedMilliseconds);
-        }
-
-        return response;
-    }
-}
-```
-
-## Exception Handling
-
-EssentialMediator provides specific exceptions for better debugging and error handling:
-
-### Custom Exceptions
-
-```csharp
-// Handler not found
-public class HandlerNotFoundException : MediatorException
-{
-    public Type RequestType { get; }
-}
-
-// Multiple handlers registered for same request (invalid)
-public class MultipleHandlersException : MediatorException
-{
-    public Type RequestType { get; }
-}
-
-// Handler configuration issues
-public class HandlerConfigurationException : MediatorException
-{
-    // Configuration-specific error details
-}
-```
-
-### Exception Handling Example
-
-```csharp
-try
-{
-    var result = await _mediator.Send(new GetUserQuery { UserId = 999 });
-}
-catch (HandlerNotFoundException ex)
-{
-    // No handler registered for GetUserQuery
-    _logger.LogError("Handler not found for {RequestType}", ex.RequestType.Name);
-    return NotFound($"No handler found for {ex.RequestType.Name}");
-}
-catch (MultipleHandlersException ex)
-{
-    // Multiple handlers registered for the same request (configuration error)
-    _logger.LogError("Multiple handlers found for {RequestType}", ex.RequestType.Name);
-    return StatusCode(500, "Server configuration error");
-}
-catch (ValidationException ex)
-{
-    // Validation failed in pipeline behavior
-    return BadRequest(ex.Errors);
-}
-catch (Exception ex)
-{
-    // General exception handling
-    _logger.LogError(ex, "Unexpected error occurred");
-    return StatusCode(500, "Internal server error");
-}
-```
-
-## CQRS Pattern Implementation
-
-EssentialMediator is perfect for implementing Command Query Responsibility Segregation (CQRS):
-
-### Commands (State Changes)
-
-```csharp
-// Command for creating an order
-public class CreateOrderCommand : IRequest<CreateOrderResult>
-{
-    public string CustomerId { get; set; } = string.Empty;
-    public List<OrderItem> Items { get; set; } = new();
-    public string ShippingAddress { get; set; } = string.Empty;
-}
-
-public class CreateOrderResult
-{
-    public string OrderId { get; set; } = string.Empty;
-    public decimal TotalAmount { get; set; }
-    public DateTime CreatedAt { get; set; }
-}
-
-public class CreateOrderHandler : IRequestHandler<CreateOrderCommand, CreateOrderResult>
-{
-    private readonly IOrderRepository _orderRepository;
-    private readonly IMediator _mediator;
-
-    public CreateOrderHandler(IOrderRepository orderRepository, IMediator mediator)
-    {
-        _orderRepository = orderRepository;
-        _mediator = mediator;
-    }
-
-    public async Task<CreateOrderResult> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
-    {
-        var order = new Order
-        {
-            CustomerId = request.CustomerId,
-            Items = request.Items,
-            ShippingAddress = request.ShippingAddress,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        await _orderRepository.CreateAsync(order, cancellationToken);
-
-        // Publish domain event
-        await _mediator.Publish(new OrderCreatedEvent { Order = order }, cancellationToken);
-
-        return new CreateOrderResult
-        {
-            OrderId = order.Id,
-            TotalAmount = order.TotalAmount,
-            CreatedAt = order.CreatedAt
-        };
-    }
-}
-```
-
-### Queries (Read-Only)
-
-```csharp
-// Query for getting orders with pagination
-public class GetOrdersQuery : IRequest<PagedResult<OrderDto>>
-{
-    public string CustomerId { get; set; } = string.Empty;
-    public int Page { get; set; } = 1;
-    public int PageSize { get; set; } = 10;
-    public string? Status { get; set; }
-}
-
-public class GetOrdersHandler : IRequestHandler<GetOrdersQuery, PagedResult<OrderDto>>
-{
-    private readonly IOrderReadRepository _orderRepository;
-
-    public GetOrdersHandler(IOrderReadRepository orderRepository)
-    {
-        _orderRepository = orderRepository;
-    }
-
-    public async Task<PagedResult<OrderDto>> Handle(GetOrdersQuery request, CancellationToken cancellationToken)
-    {
-        var orders = await _orderRepository.GetPagedAsync(
-            request.CustomerId,
-            request.Page,
-            request.PageSize,
-            request.Status,
-            cancellationToken);
-
-        return orders;
-    }
-}
-```
-
-### Domain Events
-
-```csharp
-// Domain event for order creation
-public class OrderCreatedEvent : INotification
-{
-    public Order Order { get; set; } = null!;
-    public DateTime OccurredAt { get; set; } = DateTime.UtcNow;
-}
-
-// Multiple handlers for the same event
-public class SendOrderConfirmationHandler : INotificationHandler<OrderCreatedEvent>
-{
-    private readonly IEmailService _emailService;
-
-    public SendOrderConfirmationHandler(IEmailService emailService)
-    {
-        _emailService = emailService;
-    }
-
-    public async Task Handle(OrderCreatedEvent notification, CancellationToken cancellationToken)
-    {
-        await _emailService.SendOrderConfirmationAsync(notification.Order, cancellationToken);
-    }
-}
-
-public class UpdateInventoryHandler : INotificationHandler<OrderCreatedEvent>
-{
-    private readonly IInventoryService _inventoryService;
-
-    public UpdateInventoryHandler(IInventoryService inventoryService)
-    {
-        _inventoryService = inventoryService;
-    }
-
-    public async Task Handle(OrderCreatedEvent notification, CancellationToken cancellationToken)
-    {
-        await _inventoryService.ReserveItemsAsync(notification.Order.Items, cancellationToken);
-    }
-}
-```
-
-## Performance Features
-
-EssentialMediator is optimized for high performance:
-
-### Caching and Optimization
-
-- **Handler Method Caching**: Uses `ConcurrentDictionary` to cache reflection calls
-- **Efficient Service Resolution**: Optimized service provider usage
-- **Parallel Notification Execution**: All notification handlers run in parallel by default
-- **Memory Efficient**: Minimal allocations and GC pressure
-
-### Performance Monitoring
-
-```csharp
-// Built-in performance behavior
-services.AddEssentialMediator(Assembly.GetExecutingAssembly())
-        .AddAllBuiltInBehaviors(slowRequestThresholdMs: 500);
-
-// This will log warnings for requests taking longer than 500ms
-```
-
-## Testing
-
-### Running Tests
-
-```bash
-# Run all tests
-dotnet test
-
-# Run tests with coverage
-dotnet test --collect:"XPlat Code Coverage"
-
-# Run specific test project
-cd tests/EssentialMediator.Tests
-dotnet test
-```
-
-### Testing Handlers
-
-```csharp
-public class GetUserHandlerTests
-{
-    private readonly Mock<IUserRepository> _mockRepository;
-    private readonly GetUserHandler _handler;
-
-    public GetUserHandlerTests()
-    {
-        _mockRepository = new Mock<IUserRepository>();
-        _handler = new GetUserHandler(_mockRepository.Object);
-    }
-
-    [Fact]
-    public async Task Handle_ValidUserId_ReturnsUser()
-    {
-        // Arrange
-        var userId = 1;
-        var expectedUser = new User { Id = userId, Name = "Test User" };
-        _mockRepository.Setup(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()))
-                      .ReturnsAsync(expectedUser);
-
-        var query = new GetUserQuery { UserId = userId };
-
-        // Act
-        var result = await _handler.Handle(query, CancellationToken.None);
-
-        // Assert
-        Assert.Equal(expectedUser, result);
-        _mockRepository.Verify(x => x.GetByIdAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
-    }
-}
-```
-
-### Testing with Mediator
-
-```csharp
-public class UserControllerTests
-{
-    private readonly Mock<IMediator> _mockMediator;
-    private readonly UsersController _controller;
-
-    public UserControllerTests()
-    {
-        _mockMediator = new Mock<IMediator>();
-        _controller = new UsersController(_mockMediator.Object);
-    }
-
-    [Fact]
-    public async Task GetUser_ValidId_ReturnsOkResult()
-    {
-        // Arrange
-        var userId = 1;
-        var expectedUser = new User { Id = userId, Name = "Test User" };
-        _mockMediator.Setup(x => x.Send(It.IsAny<GetUserQuery>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(expectedUser);
-
-        // Act
-        var result = await _controller.GetUser(userId, CancellationToken.None);
-
-        // Assert
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        Assert.Equal(expectedUser, okResult.Value);
-    }
-}
-```
-
-## Quick Start Guide
-
-### 1. Create a New Project
-
-```bash
-mkdir MyApp
-cd MyApp
-dotnet new webapi
-```
-
-### 2. Add Project References
-
-Add references to the EssentialMediator projects:
-
-```bash
-# Add reference to the core abstractions
-dotnet add reference path/to/EssentialMediator.Abstractions/EssentialMediator.Abstractions.csproj
-
-# Add reference to the main implementation  
-dotnet add reference path/to/EssentialMediator/EssentialMediator.csproj
-
-# Add reference to DI extensions
-dotnet add reference path/to/EssentialMediator.Extensions.DependencyInjection/EssentialMediator.Extensions.DependencyInjection.csproj
-```
-
-### 3. Setup Program.cs
+### Basic registration
 
 ```csharp
 using EssentialMediator.Extensions;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// Add EssentialMediator
-builder.Services.AddEssentialMediator(typeof(Program).Assembly)
-                .AddAllBuiltInBehaviors(slowRequestThresholdMs: 500);
-
-var app = builder.Build();
-
-// Configure pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-
-app.UseHttpsRedirection();
-app.MapControllers();
-
-app.Run();
+services.AddEssentialMediator(typeof(Program).Assembly);
 ```
 
-### 3. Create Your First Request
+Multiple assemblies can be scanned explicitly:
 
 ```csharp
-// Models/GetTimeQuery.cs
-public class GetTimeQuery : IRequest<GetTimeResponse>
-{
-    public string? TimeZone { get; set; }
-}
-
-public class GetTimeResponse
-{
-    public DateTime CurrentTime { get; set; }
-    public string TimeZone { get; set; } = string.Empty;
-}
-
-// Handlers/GetTimeHandler.cs
-public class GetTimeHandler : IRequestHandler<GetTimeQuery, GetTimeResponse>
-{
-    public Task<GetTimeResponse> Handle(GetTimeQuery request, CancellationToken cancellationToken)
-    {
-        var timeZone = request.TimeZone ?? "UTC";
-        var currentTime = timeZone == "UTC" ? DateTime.UtcNow : DateTime.Now;
-
-        return Task.FromResult(new GetTimeResponse
-        {
-            CurrentTime = currentTime,
-            TimeZone = timeZone
-        });
-    }
-}
-
-// Controllers/TimeController.cs
-[ApiController]
-[Route("api/[controller]")]
-public class TimeController : ControllerBase
-{
-    private readonly IMediator _mediator;
-
-    public TimeController(IMediator mediator) => _mediator = mediator;
-
-    [HttpGet]
-    public async Task<ActionResult<GetTimeResponse>> GetTime([FromQuery] string? timeZone)
-    {
-        var response = await _mediator.Send(new GetTimeQuery { TimeZone = timeZone });
-        return Ok(response);
-    }
-}
+services.AddEssentialMediator(
+    typeof(Program).Assembly,
+    typeof(ApplicationAssemblyMarker).Assembly);
 ```
 
+### Independent lifetimes
 
-## Advanced Usage
-
-### Custom Service Lifetimes
+Mediator and handler lifetimes are configured independently:
 
 ```csharp
-services.AddEssentialMediator(cfg =>
+using EssentialMediator.Extensions.DependencyInjection.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+services.AddEssentialMediator(config =>
 {
-    cfg.RegisterServicesFromAssemblyContaining<Program>()
-       .WithServiceLifetime(ServiceLifetime.Transient); // or Scoped, Singleton
+    config
+        .RegisterServicesFromAssemblyContaining<Program>()
+        .WithHandlerLifetime(ServiceLifetime.Scoped)
+        .WithMediatorLifetime(ServiceLifetime.Scoped);
 });
 ```
 
-### Conditional Handler Registration
+`WithServiceLifetime(...)` is retained only as an obsolete compatibility API and configures both lifetimes together. New code should use `WithHandlerLifetime(...)` and `WithMediatorLifetime(...)`.
+
+## Request/response
+
+Define a request:
 
 ```csharp
-services.AddEssentialMediator(cfg =>
-{
-    cfg.RegisterServicesFromAssemblies(
-        Assembly.GetExecutingAssembly(),
-        typeof(ExternalLibrary.Handler).Assembly
-    );
-});
+using EssentialMediator.Abstractions.Messages;
+
+public sealed record GetUserQuery(int UserId) : IRequest<User>;
 ```
 
-### Integration with ASP.NET Core
+Create exactly one handler for that request:
 
 ```csharp
-// Startup.cs or Program.cs
-public void ConfigureServices(IServiceCollection services)
+using EssentialMediator.Abstractions.Handlers;
+
+public sealed class GetUserHandler : IRequestHandler<GetUserQuery, User>
 {
-    // Database
-    services.AddDbContext<AppDbContext>(options =>
-        options.UseSqlServer(connectionString));
+    private readonly IUserRepository _users;
 
-    // Validation
-    services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-
-    // Logging
-    services.AddLogging(builder =>
+    public GetUserHandler(IUserRepository users)
     {
-        builder.AddConsole();
-        builder.AddApplicationInsights();
-    });
+        _users = users;
+    }
 
-    // EssentialMediator with all behaviors
-    services.AddEssentialMediator(Assembly.GetExecutingAssembly())
-            .AddAllBuiltInBehaviors(slowRequestThresholdMs: 1000);
-
-    // Add controllers
-    services.AddControllers();
+    public Task<User> Handle(
+        GetUserQuery request,
+        CancellationToken cancellationToken = default)
+        => _users.GetByIdAsync(request.UserId, cancellationToken);
 }
 ```
 
-### Working with Background Services
+Dispatch through `IMediator`:
 
 ```csharp
-public class OrderProcessingService : BackgroundService
-{
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<OrderProcessingService> _logger;
-
-    public OrderProcessingService(IServiceProvider serviceProvider, ILogger<OrderProcessingService> logger)
-    {
-        _serviceProvider = serviceProvider;
-        _logger = logger;
-    }
-
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            using var scope = _serviceProvider.CreateScope();
-            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
-
-            try
-            {
-                await mediator.Send(new ProcessPendingOrdersCommand(), stoppingToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing pending orders");
-            }
-
-            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
-        }
-    }
-}
+var user = await mediator.Send(
+    new GetUserQuery(42),
+    cancellationToken);
 ```
 
-## Samples and Examples
+If no request handler is registered, `HandlerNotFoundException` is thrown. If more than one handler is registered for a request, `MultipleHandlersException` is thrown.
 
-Check out the complete samples in the repository:
+## Commands without a response value
 
-**`samples/EssentialMediator.WebApiDemo/`** - Complete ASP.NET Core Web API example
-- CRUD operations
-- Validation with FluentValidation
-- Pipeline behaviors
-- Error handling
-- Swagger documentation
+Use `IRequest` when the operation only needs completion semantics:
 
-Run the sample:
+```csharp
+public sealed record DeleteUserCommand(int UserId) : IRequest;
+
+public sealed class DeleteUserHandler : IRequestHandler<DeleteUserCommand>
+{
+    private readonly IUserRepository _users;
+
+    public DeleteUserHandler(IUserRepository users)
+    {
+        _users = users;
+    }
+
+    public async Task<Unit> Handle(
+        DeleteUserCommand request,
+        CancellationToken cancellationToken = default)
+    {
+        await _users.DeleteAsync(request.UserId, cancellationToken);
+        return Unit.Value;
+    }
+}
+
+await mediator.Send(new DeleteUserCommand(42), cancellationToken);
+```
+
+## Notifications
+
+A notification can have zero, one, or many handlers:
+
+```csharp
+public sealed record UserCreated(int UserId) : INotification;
+
+public sealed class AuditUserCreated : INotificationHandler<UserCreated>
+{
+    public Task Handle(
+        UserCreated notification,
+        CancellationToken cancellationToken = default)
+    {
+        // Audit work.
+        return Task.CompletedTask;
+    }
+}
+
+public sealed class SendWelcomeEmail : INotificationHandler<UserCreated>
+{
+    public Task Handle(
+        UserCreated notification,
+        CancellationToken cancellationToken = default)
+    {
+        // Email work.
+        return Task.CompletedTask;
+    }
+}
+
+await mediator.Publish(new UserCreated(42), cancellationToken);
+```
+
+Notification handlers are started without serially awaiting each handler and are then awaited together. Synchronous handler failures, asynchronous handler failures, and cancellation are propagated to the caller rather than being silently swallowed.
+
+## Pipeline behaviors
+
+Pipeline behaviors wrap request handling and execute in registration order.
+
+```csharp
+services
+    .AddEssentialMediator(typeof(Program).Assembly)
+    .AddLoggingBehavior()
+    .AddPerformanceBehavior(slowRequestThresholdMs: 500)
+    .AddValidationBehavior();
+```
+
+Or register all built-in behaviors:
+
+```csharp
+services
+    .AddEssentialMediator(typeof(Program).Assembly)
+    .AddAllBuiltInBehaviors(slowRequestThresholdMs: 500);
+```
+
+### Built-in validation
+
+The built-in `ValidationBehavior<,>` uses `System.ComponentModel.DataAnnotations`. Validation is **not automatic unless the validation behavior is registered**.
+
+```csharp
+using System.ComponentModel.DataAnnotations;
+
+public sealed record CreateUserCommand(
+    [property: Required] string Name,
+    [property: EmailAddress] string Email) : IRequest<int>;
+```
+
+Invalid requests cause `System.ComponentModel.DataAnnotations.ValidationException` before the request handler executes.
+
+FluentValidation is used by the Web API sample, but it is not the implementation behind EssentialMediator's built-in validation behavior. Applications that prefer FluentValidation can implement their own `IPipelineBehavior<TRequest, TResponse>`.
+
+### Performance monitoring
+
+The built-in performance behavior measures request duration and logs a warning when the configured threshold is exceeded:
+
+```csharp
+services.AddPerformanceBehavior(slowRequestThresholdMs: 250);
+```
+
+The threshold is injected into `PerformanceBehavior<,>` through `PerformanceBehaviorOptions`; it is not a documentation-only setting.
+
+## Container-neutral runtime
+
+The mediator core depends on `IServiceProvider`, not on `Microsoft.Extensions.DependencyInjection` extension methods. A container only needs to resolve the corresponding `IEnumerable<TService>` registrations required by the mediator.
+
+Microsoft DI-specific registration and assembly scanning live in `EssentialMediator.Extensions.DependencyInjection`.
+
+## Handler discovery
+
+The Microsoft DI integration scans public, concrete types for request and notification handler interfaces.
+
+Assembly loading failures are fail-fast. A `ReflectionTypeLoadException` is surfaced as `MediatorRegistrationException` with the assembly identity and loader exceptions preserved, so invalid startup configuration is not converted into a misleading runtime "handler not found" error.
+
+## Dispatch implementation
+
+`Mediator` caches typed request and notification wrapper instances in `ConcurrentDictionary` instances.
+
+Reflection is used only when a typed wrapper is first constructed for a message type. Normal dispatch calls the typed handler and pipeline interfaces directly; the hot path does not use `MethodInfo.Invoke`.
+
+## Benchmarks
+
+A BenchmarkDotNet suite lives under [`benchmarks/`](benchmarks/README.md). It compares:
+
+- direct request-handler invocation
+- `Mediator.Send`
+- `Mediator.Send` with one pipeline behavior
+- direct notification-handler invocation
+- `Mediator.Publish`
+
+It also enables `MemoryDiagnoser` to report allocations.
+
+Run it locally on controlled hardware:
 
 ```bash
-cd samples/EssentialMediator.WebApiDemo
-dotnet run
+dotnet run -c Release \
+  --project benchmarks/EssentialMediator.Benchmarks/EssentialMediator.Benchmarks.csproj
 ```
 
-Then visit `https://localhost:5001/swagger` to explore the API.
+The repository intentionally does not publish performance numbers based on GitHub-hosted runner timings. Compare benchmark results on the same machine and runtime before drawing performance conclusions.
 
-## Best Practices
+## Testing and quality gates
 
-### 1. Keep Handlers Simple
+Run the tests locally:
 
-```csharp
-// Good - focused, single responsibility
-public class GetUserHandler : IRequestHandler<GetUserQuery, User>
-{
-    private readonly IUserRepository _repository;
-
-    public GetUserHandler(IUserRepository repository)
-    {
-        _repository = repository;
-    }
-
-    public Task<User> Handle(GetUserQuery request, CancellationToken cancellationToken)
-    {
-        return _repository.GetByIdAsync(request.UserId, cancellationToken);
-    }
-}
-
-// Avoid - too much logic in handler
-public class CreateUserHandler : IRequestHandler<CreateUserCommand, User>
-{
-    public async Task<User> Handle(CreateUserCommand request, CancellationToken cancellationToken)
-    {
-        // Validation logic
-        // Business logic
-        // Database operations
-        // Email sending
-        // Logging
-        // ... too much responsibility
-    }
-}
+```bash
+dotnet test tests/EssentialMediator.Tests/EssentialMediator.Tests.csproj -c Release
 ```
 
-### 2. Use Pipeline Behaviors for Cross-Cutting Concerns
+Pull-request CI currently verifies:
 
-```csharp
-// Good - validation in behavior
-public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
-{
-    // Validation logic here
-}
+- restore on .NET 10
+- Release build with warnings treated as errors
+- benchmark project compilation
+- unit/regression tests
+- at least **90% line coverage** and **80% branch coverage**
+- successful creation of all three NuGet packages
+- successful creation of `.snupkg` symbol packages
 
-// Good - clean handler
-public class CreateUserHandler : IRequestHandler<CreateUserCommand, User>
-{
-    // Only business logic here
-}
-```
+Coverage is generated with the existing `coverlet.collector` dependency and enforced from Cobertura output.
 
-### 3. Use Meaningful Naming
+## NuGet package readiness
 
-```csharp
-// Good
-public class GetUserByIdQuery : IRequest<User> { }
-public class CreateUserCommand : IRequest<CreateUserResult> { }
-public class UserCreatedEvent : INotification { }
+The three public projects contain NuGet metadata and are validated with `dotnet pack` in CI:
 
-// Avoid
-public class UserRequest : IRequest<User> { }
-public class UserCommand : IRequest { }
-public class UserEvent : INotification { }
-```
+- `EssentialMediator.Abstractions`
+- `EssentialMediator`
+- `EssentialMediator.Extensions.DependencyInjection`
 
-### 4. Handle Cancellation Properly
+Package builds include portable symbols and Source Link-compatible repository metadata. An official package/release publishing flow should be performed explicitly rather than as a side effect of merging into `develop`.
 
-```csharp
-public class GetUsersHandler : IRequestHandler<GetUsersQuery, List<User>>
-{
-    private readonly IUserRepository _repository;
+## Development flow
 
-    public GetUsersHandler(IUserRepository repository)
-    {
-        _repository = repository;
-    }
-
-    public async Task<List<User>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
-    {
-        // Pass cancellation token to async operations
-        return await _repository.GetAllAsync(cancellationToken);
-    }
-}
-```
-
-## Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-### How to Contribute
-
-1. **Fork the Project**
-   ```bash
-   git clone https://github.com/caiodom/essential-mediator.git
-   cd essential-mediator
-   ```
-
-2. **Create a Feature Branch**
-   ```bash
-   git checkout -b feature/amazing-feature
-   ```
-
-3. **Make Your Changes**
-   - Follow the existing code style and conventions
-   - Add tests for new functionality
-   - Update documentation as needed
-
-4. **Run Tests**
-   ```bash
-   dotnet test
-   ```
-
-5. **Commit Your Changes**
-   ```bash
-   git commit -m 'Add some amazing feature'
-   ```
-
-6. **Push to the Branch**
-   ```bash
-   git push origin feature/amazing-feature
-   ```
-
-7. **Open a Pull Request**
-   - Provide a clear description of the changes
-   - Link any related issues
-   - Ensure all checks pass
-
-### Development Guidelines
-
-- **Code Style**: Follow standard C# conventions and use EditorConfig
-- **Testing**: Maintain or improve test coverage
-- **Documentation**: Update README and XML documentation
-- **Performance**: Consider performance implications of changes
-- **Breaking Changes**: Avoid breaking changes in minor versions
-
-### Areas for Contribution
-
-- Bug fixes
-- Performance improvements
-- Documentation improvements
-- Additional test cases
-- New pipeline behaviors
-- Integration packages
+The repository uses `develop` as the integration branch and `main` for releases. Changes should be reviewed and validated through pull requests before integration. Promotion from `develop` to `main` is explicit; the repository does not automatically create a release PR after every integration merge.
 
 ## License
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
-
-### MIT License Summary
-
-- **Commercial use** - Use in commercial projects
-- **Modification** - Modify the source code
-- **Distribution** - Distribute copies
-- **Private use** - Use privately
-- **Liability** - No warranty or liability
-- **Warranty** - No warranty provided
-
----
-
-## Links
-
-- **Repository**: [https://github.com/caiodom/essential-mediator](https://github.com/caiodom/essential-mediator)
-- **Issues**: [https://github.com/caiodom/essential-mediator/issues](https://github.com/caiodom/essential-mediator/issues)
-- **Discussions**: [https://github.com/caiodom/essential-mediator/discussions](https://github.com/caiodom/essential-mediator/discussions)
-
----
-
-**Made by [Caio Henrique Domingues Leite](https://github.com/caiodom)**
-
-
+Licensed under the [MIT License](LICENSE).
