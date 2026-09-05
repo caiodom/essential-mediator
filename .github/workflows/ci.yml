@@ -79,3 +79,10 @@ jobs:
         name: nuget-packages
         path: artifacts/packages/*.nupkg
         if-no-files-found: error
+
+    - name: Upload NuGet symbol packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-symbol-packages
+        path: artifacts/packages/*.snupkg
+        if-no-files-found: error
