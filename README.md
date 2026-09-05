@@ -280,15 +280,18 @@ dotnet test tests/EssentialMediator.Tests/EssentialMediator.Tests.csproj -c Rele
 
 Pull-request CI currently verifies:
 
-- restore on .NET 10
+- restore using the .NET 10 SDK policy pinned by `global.json`
+- repository whitespace formatting
 - Release build with warnings treated as errors
 - benchmark project compilation
 - unit/regression tests
 - at least **90% line coverage** and **80% branch coverage**
-- successful creation of all three NuGet packages
-- successful creation of `.snupkg` symbol packages
+- NuGet audit across direct and transitive dependencies, with high/critical advisories treated as errors
+- SDK package validation for all three public packages
+- successful creation of all three `.nupkg` packages and `.snupkg` symbol packages
+- successful restore, build, and execution of an external NuGet package consumer
 
-Coverage is generated with the existing `coverlet.collector` dependency and enforced from Cobertura output.
+GitHub Actions used by CI and release workflows are pinned to immutable commit SHAs. Coverage is generated with the existing `coverlet.collector` dependency and enforced from Cobertura output.
 
 ## NuGet package readiness
 
@@ -298,11 +301,22 @@ The three public projects contain NuGet metadata and are validated with `dotnet 
 - `EssentialMediator`
 - `EssentialMediator.Extensions.DependencyInjection`
 
-Package builds include portable symbols and Source Link-compatible repository metadata. An official package/release publishing flow should be performed explicitly rather than as a side effect of merging into `develop`.
+Package builds include portable symbols and Source Link-compatible repository metadata. Stable publication is explicit: a `vMAJOR.MINOR.PATCH` tag on a commit contained in `main` triggers the release workflow, which re-runs the quality gates and publishes through NuGet.org Trusted Publishing/OIDC before creating the GitHub Release.
+
+No stable package/release has been published yet. See [`docs/RELEASING.md`](docs/RELEASING.md) before preparing the first release.
 
 ## Development flow
 
 The repository uses `develop` as the integration branch and `main` for releases. Changes should be reviewed and validated through pull requests before integration. Promotion from `develop` to `main` is explicit; the repository does not automatically create a release PR after every integration merge.
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the development workflow and local validation commands.
+
+## Project documentation
+
+- [`CHANGELOG.md`](CHANGELOG.md) — notable changes and release history
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution workflow, coding expectations, and local validation
+- [`SECURITY.md`](SECURITY.md) — supported-version and vulnerability-reporting policy
+- [`docs/RELEASING.md`](docs/RELEASING.md) — Trusted Publishing setup and stable-release procedure
 
 ## License
 
