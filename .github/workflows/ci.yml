@@ -25,8 +25,18 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore EssentialMediator.sln
 
+    - name: Restore benchmarks
+      run: dotnet restore benchmarks/EssentialMediator.Benchmarks/EssentialMediator.Benchmarks.csproj
+
     - name: Build with warnings as errors
       run: dotnet build EssentialMediator.sln --no-restore --configuration Release --warnaserror
+
+    - name: Build benchmarks
+      run: >-
+        dotnet build benchmarks/EssentialMediator.Benchmarks/EssentialMediator.Benchmarks.csproj
+        --no-restore
+        --configuration Release
+        --warnaserror
 
     - name: Test with coverage
       run: >-
