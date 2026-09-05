@@ -1,0 +1,175 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+      with:
+        global-json-file: global.json
+
+    - name: Validate release tag and source commit
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        tag="${GITHUB_REF_NAME}"
+        if [[ ! "$tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+          echo "::error::Release tags must use stable SemVer format vMAJOR.MINOR.PATCH."
+          exit 1
+        fi
+
+        git fetch origin main --no-tags
+        if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+          echo "::error::Release tag $tag does not point to a commit contained in main."
+          exit 1
+        fi
+
+        package_version="${tag#v}"
+        echo "PACKAGE_VERSION=$package_version" >> "$GITHUB_ENV"
+        echo "Validated release $tag from main (NuGet version $package_version)."
+
+    - name: Validate release credentials
+      shell: bash
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      run: |
+        set -euo pipefail
+        if [[ -z "${NUGET_API_KEY}" ]]; then
+          echo "::error::Repository secret NUGET_API_KEY is required before creating a release tag."
+          exit 1
+        fi
+
+    - name: Restore dependencies
+      run: dotnet restore EssentialMediator.sln
+
+    - name: Restore benchmarks
+      run: dotnet restore benchmarks/EssentialMediator.Benchmarks/EssentialMediator.Benchmarks.csproj
+
+    - name: Verify formatting
+      run: dotnet format whitespace EssentialMediator.sln --no-restore --verify-no-changes
+
+    - name: Build with warnings as errors
+      run: dotnet build EssentialMediator.sln --no-restore --configuration Release --warnaserror
+
+    - name: Build benchmarks
+      run: >-
+        dotnet build benchmarks/EssentialMediator.Benchmarks/EssentialMediator.Benchmarks.csproj
+        --no-restore
+        --configuration Release
+        --warnaserror
+
+    - name: Test with coverage
+      run: >-
+        dotnet test tests/EssentialMediator.Tests/EssentialMediator.Tests.csproj
+        --no-build
+        --configuration Release
+        --verbosity normal
+        --collect:"XPlat Code Coverage"
+        --results-directory ./TestResults
+
+    - name: Enforce coverage thresholds
+      run: >-
+        python3 scripts/check-coverage.py
+        --pattern "TestResults/**/coverage.cobertura.xml"
+        --min-line 90
+        --min-branch 80
+
+    - name: Pack EssentialMediator.Abstractions
+      run: >-
+        dotnet pack src/EssentialMediator.Abstractions/EssentialMediator.Abstractions.csproj
+        --no-build
+        --configuration Release
+        --output ./artifacts/packages
+        -p:PackageVersion=${PACKAGE_VERSION}
+        -p:Version=${PACKAGE_VERSION}
+        -p:AssemblyVersion=${PACKAGE_VERSION}.0
+        -p:FileVersion=${PACKAGE_VERSION}.0
+
+    - name: Pack EssentialMediator
+      run: >-
+        dotnet pack src/EssentialMediator/EssentialMediator.csproj
+        --no-build
+        --configuration Release
+        --output ./artifacts/packages
+        -p:PackageVersion=${PACKAGE_VERSION}
+        -p:Version=${PACKAGE_VERSION}
+        -p:AssemblyVersion=${PACKAGE_VERSION}.0
+        -p:FileVersion=${PACKAGE_VERSION}.0
+
+    - name: Pack EssentialMediator.Extensions.DependencyInjection
+      run: >-
+        dotnet pack src/EssentialMediator.Extensions.DependencyInjection/EssentialMediator.Extensions.DependencyInjection.csproj
+        --no-build
+        --configuration Release
+        --output ./artifacts/packages
+        -p:PackageVersion=${PACKAGE_VERSION}
+        -p:Version=${PACKAGE_VERSION}
+        -p:AssemblyVersion=${PACKAGE_VERSION}.0
+        -p:FileVersion=${PACKAGE_VERSION}.0
+
+    - name: Smoke test NuGet packages
+      run: bash scripts/smoke-test-packages.sh
+
+    - name: Publish packages to NuGet.org
+      shell: bash
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+      run: |
+        set -euo pipefail
+
+        packages=(
+          "artifacts/packages/EssentialMediator.Abstractions.${PACKAGE_VERSION}.nupkg"
+          "artifacts/packages/EssentialMediator.${PACKAGE_VERSION}.nupkg"
+          "artifacts/packages/EssentialMediator.Extensions.DependencyInjection.${PACKAGE_VERSION}.nupkg"
+        )
+
+        for package in "${packages[@]}"; do
+          if [[ ! -f "$package" ]]; then
+            echo "::error::Expected release package not found: $package"
+            exit 1
+          fi
+        done
+
+        for package in "${packages[@]}"; do
+          dotnet nuget push "$package" \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json
+        done
+
+    - name: Create GitHub release
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -euo pipefail
+        command -v gh >/dev/null 2>&1 || {
+          echo "::error::GitHub CLI is not available on the runner."
+          exit 1
+        }
+
+        gh release create "$GITHUB_REF_NAME" \
+          artifacts/packages/*.nupkg \
+          artifacts/packages/*.snupkg \
+          --verify-tag \
+          --generate-notes \
+          --title "$GITHUB_REF_NAME"
