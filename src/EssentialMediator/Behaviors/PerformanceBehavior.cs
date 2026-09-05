@@ -6,16 +6,21 @@ using Microsoft.Extensions.Logging;
 namespace EssentialMediator.Behaviors;
 
 /// <summary>
-/// Performance monitoring behavior that logs slow requests
+/// Performance monitoring behavior that logs slow requests.
 /// </summary>
-/// <typeparam name="TRequest">Request type</typeparam>
-/// <typeparam name="TResponse">Response type</typeparam>
+/// <typeparam name="TRequest">Request type.</typeparam>
+/// <typeparam name="TResponse">Response type.</typeparam>
 public class PerformanceBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
     private readonly ILogger<PerformanceBehavior<TRequest, TResponse>> _logger;
     private readonly int _slowRequestThresholdMs;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PerformanceBehavior{TRequest, TResponse}"/> class.
+    /// </summary>
+    /// <param name="logger">Logger used to report request timings.</param>
+    /// <param name="options">Performance monitoring configuration.</param>
     public PerformanceBehavior(
         ILogger<PerformanceBehavior<TRequest, TResponse>> logger,
         PerformanceBehaviorOptions options)
@@ -25,6 +30,7 @@ public class PerformanceBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
         _slowRequestThresholdMs = options.SlowRequestThresholdMs;
     }
 
+    /// <inheritdoc />
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         var requestName = typeof(TRequest).Name;

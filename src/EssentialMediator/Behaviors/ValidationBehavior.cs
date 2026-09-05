@@ -7,20 +7,25 @@ using System.ComponentModel.DataAnnotations;
 namespace EssentialMediator.Behaviors;
 
 /// <summary>
-/// Validation behavior that validates requests using DataAnnotations
+/// Validation behavior that validates requests using DataAnnotations.
 /// </summary>
-/// <typeparam name="TRequest">Request type</typeparam>
-/// <typeparam name="TResponse">Response type</typeparam>
+/// <typeparam name="TRequest">Request type.</typeparam>
+/// <typeparam name="TResponse">Response type.</typeparam>
 public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
     private readonly ILogger<ValidationBehavior<TRequest, TResponse>> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ValidationBehavior{TRequest, TResponse}"/> class.
+    /// </summary>
+    /// <param name="logger">Logger used to report validation activity.</param>
     public ValidationBehavior(ILogger<ValidationBehavior<TRequest, TResponse>> logger)
     {
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         var requestName = typeof(TRequest).Name;

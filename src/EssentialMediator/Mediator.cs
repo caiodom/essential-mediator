@@ -9,7 +9,7 @@ using System.Collections.Concurrent;
 namespace EssentialMediator;
 
 /// <summary>
-/// Default optimized implementation of IMediator.
+/// Default optimized implementation of <see cref="IMediator"/>.
 /// </summary>
 public sealed class Mediator : IMediator
 {
@@ -22,6 +22,11 @@ public sealed class Mediator : IMediator
     private static readonly ConcurrentDictionary<Type, NotificationHandlerWrapper>
         NotificationHandlerWrappers = new();
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="Mediator"/> class.
+    /// </summary>
+    /// <param name="serviceProvider">Service provider used to resolve handlers and pipeline behaviors.</param>
+    /// <param name="logger">Logger used to record mediator activity.</param>
     public Mediator(IServiceProvider serviceProvider, ILogger<Mediator> logger)
     {
         _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
