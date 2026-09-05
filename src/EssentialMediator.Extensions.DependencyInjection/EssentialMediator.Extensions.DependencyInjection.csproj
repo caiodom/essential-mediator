@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -12,10 +12,10 @@
     <FileVersion>1.0.0.0</FileVersion>
 
     <Title>EssentialMediator Dependency Injection Extensions</Title>
-    <Description>Microsoft.Extensions.DependencyInjection extensions for EssentialMediator</Description>
-    <PackageTags>mediator;cqrs;dependency-injection;microsoft-extensions</PackageTags>
+    <Description>Microsoft.Extensions.DependencyInjection integration for EssentialMediator with assembly scanning, lifetime configuration, and built-in behavior registration.</Description>
+    <PackageTags>dotnet;mediator;cqrs;dependency-injection;microsoft-extensions</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Initial release of EssentialMediator DI extensions with assembly scanning and flexible registration.</PackageReleaseNotes>
+    <PackageReleaseNotes>Initial stable release. See https://github.com/caiodom/essential-mediator/blob/main/CHANGELOG.md for details.</PackageReleaseNotes>
 
     <!-- Package debugging and provenance -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
