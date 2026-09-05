@@ -63,7 +63,9 @@ public class BehaviorTests
         var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         var logger = loggerFactory.CreateLogger<PerformanceBehavior<TestRequest, string>>();
 
-        var behavior = new PerformanceBehavior<TestRequest, string>(logger, 1000);
+        var behavior = new PerformanceBehavior<TestRequest, string>(
+            logger,
+            new PerformanceBehaviorOptions(1000));
         var request = new TestRequest { Message = "Test" };
 
         // Act
@@ -85,7 +87,9 @@ public class BehaviorTests
         var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         var logger = loggerFactory.CreateLogger<PerformanceBehavior<TestRequest, string>>();
 
-        var behavior = new PerformanceBehavior<TestRequest, string>(logger, 10); // Very low threshold
+        var behavior = new PerformanceBehavior<TestRequest, string>(
+            logger,
+            new PerformanceBehaviorOptions(10));
         var request = new TestRequest { Message = "Test" };
 
         // Act
