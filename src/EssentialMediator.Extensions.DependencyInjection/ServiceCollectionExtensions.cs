@@ -251,6 +251,11 @@ public static class ServiceCollectionExtensions
     /// <returns>The service collection for chaining</returns>
     public static IServiceCollection AddPerformanceBehavior(this IServiceCollection services, int slowRequestThresholdMs = 500, ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
     {
+        ArgumentNullException.ThrowIfNull(services);
+
+        var options = new EssentialMediator.Behaviors.PerformanceBehaviorOptions(slowRequestThresholdMs);
+        services.AddSingleton(options);
+
         switch (serviceLifetime)
         {
             case ServiceLifetime.Singleton:

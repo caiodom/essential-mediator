@@ -16,10 +16,13 @@ public class PerformanceBehavior<TRequest, TResponse> : IPipelineBehavior<TReque
     private readonly ILogger<PerformanceBehavior<TRequest, TResponse>> _logger;
     private readonly int _slowRequestThresholdMs;
 
-    public PerformanceBehavior(ILogger<PerformanceBehavior<TRequest, TResponse>> logger, int slowRequestThresholdMs = 500)
+    public PerformanceBehavior(
+        ILogger<PerformanceBehavior<TRequest, TResponse>> logger,
+        PerformanceBehaviorOptions options)
     {
-        _logger = logger;
-        _slowRequestThresholdMs = slowRequestThresholdMs;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        ArgumentNullException.ThrowIfNull(options);
+        _slowRequestThresholdMs = options.SlowRequestThresholdMs;
     }
 
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
