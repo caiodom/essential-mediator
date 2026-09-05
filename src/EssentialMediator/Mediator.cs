@@ -64,6 +64,7 @@ namespace EssentialMediator
         public async Task Publish(INotification notification,CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(notification);
+            cancellationToken.ThrowIfCancellationRequested();
 
             var notificationType = notification.GetType();
             var handlerInterface = typeof(INotificationHandler<>).MakeGenericType(notificationType);
@@ -111,13 +112,27 @@ namespace EssentialMediator
                     {
                         tasks.Add(task);
                     }
+                    else
+                    {
+                        tasks.Add(Task.FromException(new HandlerConfigurationException(
+                            handlerInterface,
+                            "Handle method did not return a Task")));
+                    }
+                }
+                catch (TargetInvocationException tie) when (tie.InnerException != null)
+                {
+                    if (tie.InnerException is OperationCanceledException && cancellationToken.IsCancellationRequested)
+                    {
+                        tasks.Add(Task.FromCanceled(cancellationToken));
+                    }
+                    else
+                    {
+                        tasks.Add(Task.FromException(tie.InnerException));
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(
-                        ex,
-                        "Error creating task for handler {HandlerType}",
-                        handler.GetType().Name);
+                    tasks.Add(Task.FromException(ex));
                 }
             }
 
