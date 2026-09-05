@@ -25,7 +25,20 @@ namespace EssentialMediator
     {
         private readonly IServiceProvider _serviceProvider;
         private readonly ILogger<Mediator> _logger;
-        private static readonly ConcurrentDictionary<Type, MethodInfo> HandleMethodCache = new();
+        private static readonly ConcurrentDictionary<HandleMethodCacheKey, MethodInfo> HandleMethodCache = new();
+
+        private enum HandleMethodKind
+        {
+            Request,
+            Notification,
+            PipelineBehavior
+        }
+
+        private readonly record struct HandleMethodCacheKey(
+            Type HandlerType,
+            Type MessageType,
+            Type? ResponseType,
+            HandleMethodKind Kind);
 
         public Mediator(IServiceProvider serviceProvider,ILogger<Mediator> logger)
         {
@@ -79,9 +92,15 @@ namespace EssentialMediator
             {
                 try
                 {
-                    var method = HandleMethodCache.GetOrAdd(
+                    var cacheKey = new HandleMethodCacheKey(
                         handler.GetType(),
-                        t => t.GetMethod(
+                        notificationType,
+                        null,
+                        HandleMethodKind.Notification);
+
+                    var method = HandleMethodCache.GetOrAdd(
+                        cacheKey,
+                        _ => handler.GetType().GetMethod(
                             "Handle",
                             new[] { notificationType, typeof(CancellationToken) }
                         ) ?? throw new HandlerConfigurationException(
@@ -137,9 +156,15 @@ namespace EssentialMediator
 
             foreach (var behavior in behaviors.AsEnumerable().Reverse())
             {
-                var method = HandleMethodCache.GetOrAdd(
+                var cacheKey = new HandleMethodCacheKey(
                     behavior.GetType(),
-                    t => t.GetMethod(
+                    requestType,
+                    responseType,
+                    HandleMethodKind.PipelineBehavior);
+
+                var method = HandleMethodCache.GetOrAdd(
+                    cacheKey,
+                    _ => behavior.GetType().GetMethod(
                         "Handle",
                         new[]
                         {
@@ -191,9 +216,15 @@ namespace EssentialMediator
 
             foreach (var behavior in behaviors.AsEnumerable().Reverse())
             {
-                var method = HandleMethodCache.GetOrAdd(
+                var cacheKey = new HandleMethodCacheKey(
                     behavior.GetType(),
-                    t => t.GetMethod(
+                    requestType,
+                    typeof(Unit),
+                    HandleMethodKind.PipelineBehavior);
+
+                var method = HandleMethodCache.GetOrAdd(
+                    cacheKey,
+                    _ => behavior.GetType().GetMethod(
                         "Handle",
                         new[]
                         {
@@ -262,9 +293,15 @@ namespace EssentialMediator
 
             try
             {
-                var method = HandleMethodCache.GetOrAdd(
+                var cacheKey = new HandleMethodCacheKey(
                     handler.GetType(),
-                    t => t.GetMethod(
+                    requestType,
+                    responseType,
+                    HandleMethodKind.Request);
+
+                var method = HandleMethodCache.GetOrAdd(
+                    cacheKey,
+                    _ => handler.GetType().GetMethod(
                         "Handle",
                         new[] { requestType, typeof(CancellationToken) }
                     ) ?? throw new HandlerConfigurationException(
@@ -328,9 +365,15 @@ namespace EssentialMediator
 
             try
             {
-                var method = HandleMethodCache.GetOrAdd(
+                var cacheKey = new HandleMethodCacheKey(
                     handler.GetType(),
-                    t => t.GetMethod(
+                    requestType,
+                    typeof(Unit),
+                    HandleMethodKind.Request);
+
+                var method = HandleMethodCache.GetOrAdd(
+                    cacheKey,
+                    _ => handler.GetType().GetMethod(
                         "Handle",
                         new[] { requestType, typeof(CancellationToken) }
                     ) ?? throw new HandlerConfigurationException(
