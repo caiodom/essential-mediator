@@ -4,23 +4,39 @@ using System.Reflection;
 namespace EssentialMediator.Extensions.DependencyInjection.Configuration;
 
 /// <summary>
-/// Configuration for EssentialMediator
+/// Configuration for EssentialMediator.
 /// </summary>
 public class MediatorConfiguration
 {
     internal HashSet<Assembly> Assemblies { get; } = new();
 
     /// <summary>
-    /// Gets or sets the service lifetime for handlers. Default is Scoped.
+    /// Gets or sets the service lifetime for request and notification handlers. Default is Scoped.
     /// </summary>
-    public ServiceLifetime ServiceLifetime { get; set; } = ServiceLifetime.Scoped;
+    public ServiceLifetime HandlerLifetime { get; set; } = ServiceLifetime.Scoped;
 
     /// <summary>
-    /// Register handlers from specified assemblies
+    /// Gets or sets the service lifetime for <see cref="EssentialMediator.Mediation.IMediator"/>. Default is Scoped.
     /// </summary>
-    /// <param name="assemblies">Assemblies to scan</param>
-    /// <returns>The configuration instance for method chaining</returns>
-    /// <exception cref="ArgumentNullException">Thrown when assemblies is null</exception>
+    public ServiceLifetime MediatorLifetime { get; set; } = ServiceLifetime.Scoped;
+
+    /// <summary>
+    /// Gets or sets the legacy shared lifetime. Setting this property configures both handler and mediator lifetimes.
+    /// </summary>
+    [Obsolete("Use HandlerLifetime and MediatorLifetime to configure lifetimes independently.")]
+    public ServiceLifetime ServiceLifetime
+    {
+        get => HandlerLifetime;
+        set
+        {
+            HandlerLifetime = value;
+            MediatorLifetime = value;
+        }
+    }
+
+    /// <summary>
+    /// Register handlers from specified assemblies.
+    /// </summary>
     public MediatorConfiguration RegisterServicesFromAssemblies(params Assembly[] assemblies)
     {
         ArgumentNullException.ThrowIfNull(assemblies);
@@ -29,14 +45,13 @@ public class MediatorConfiguration
         {
             Assemblies.Add(assembly);
         }
+
         return this;
     }
 
     /// <summary>
-    /// Register handlers from assembly containing the specified type
+    /// Register handlers from assembly containing the specified type.
     /// </summary>
-    /// <typeparam name="T">Type to locate assembly</typeparam>
-    /// <returns>The configuration instance for method chaining</returns>
     public MediatorConfiguration RegisterServicesFromAssemblyContaining<T>()
     {
         Assemblies.Add(typeof(T).Assembly);
@@ -44,11 +59,8 @@ public class MediatorConfiguration
     }
 
     /// <summary>
-    /// Register handlers from assembly containing the specified type
+    /// Register handlers from assembly containing the specified type.
     /// </summary>
-    /// <param name="type">Type to locate assembly</param>
-    /// <returns>The configuration instance for method chaining</returns>
-    /// <exception cref="ArgumentNullException">Thrown when type is null</exception>
     public MediatorConfiguration RegisterServicesFromAssemblyContaining(Type type)
     {
         ArgumentNullException.ThrowIfNull(type);
@@ -57,33 +69,51 @@ public class MediatorConfiguration
     }
 
     /// <summary>
-    /// Sets the service lifetime for handlers
+    /// Sets the handler lifetime without changing the mediator lifetime.
     /// </summary>
-    /// <param name="lifetime">The service lifetime to use</param>
-    /// <returns>The configuration instance for method chaining</returns>
-    public MediatorConfiguration WithServiceLifetime(ServiceLifetime lifetime)
+    public MediatorConfiguration WithHandlerLifetime(ServiceLifetime lifetime)
     {
-        ServiceLifetime = lifetime;
+        HandlerLifetime = lifetime;
         return this;
     }
 
     /// <summary>
-    /// Register handlers from the entry assembly
+    /// Sets the mediator lifetime without changing handler lifetimes.
     /// </summary>
-    /// <returns>The configuration instance for method chaining</returns>
+    public MediatorConfiguration WithMediatorLifetime(ServiceLifetime lifetime)
+    {
+        MediatorLifetime = lifetime;
+        return this;
+    }
+
+    /// <summary>
+    /// Sets both mediator and handler lifetimes for backward compatibility.
+    /// </summary>
+    [Obsolete("Use WithHandlerLifetime and WithMediatorLifetime to configure lifetimes independently.")]
+    public MediatorConfiguration WithServiceLifetime(ServiceLifetime lifetime)
+    {
+        HandlerLifetime = lifetime;
+        MediatorLifetime = lifetime;
+        return this;
+    }
+
+    /// <summary>
+    /// Register handlers from the entry assembly.
+    /// </summary>
     public MediatorConfiguration RegisterServicesFromEntryAssembly()
     {
         var entryAssembly = Assembly.GetEntryAssembly();
         if (entryAssembly != null)
+        {
             Assemblies.Add(entryAssembly);
+        }
 
         return this;
     }
 
     /// <summary>
-    /// Register handlers from the calling assembly
+    /// Register handlers from the calling assembly.
     /// </summary>
-    /// <returns>The configuration instance for method chaining</returns>
     public MediatorConfiguration RegisterServicesFromCallingAssembly()
     {
         Assemblies.Add(Assembly.GetCallingAssembly());
