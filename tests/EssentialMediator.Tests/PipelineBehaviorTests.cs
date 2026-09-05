@@ -70,7 +70,7 @@ public class PipelineBehaviorTests
         services.AddLogging(builder => builder.AddConsole());
         services.AddScoped<IMediator, Mediator>();
         services.AddScoped<IRequestHandler<TestRequest, string>, TestRequestHandler>();
-        
+
         // Register in specific order: Logging first, then Performance
         services.AddScoped<IPipelineBehavior<TestRequest, string>, TestLoggingBehavior<TestRequest, string>>();
         services.AddScoped<IPipelineBehavior<TestRequest, string>, TestPerformanceBehavior<TestRequest, string>>();
@@ -84,11 +84,11 @@ public class PipelineBehaviorTests
 
         // Assert
         Assert.Equal("Handled: Test Message", result);
-        
+
         // Verify logging behavior executed
         Assert.Contains("Before handling TestRequest", TestLoggingBehavior<TestRequest, string>.Logs);
         Assert.Contains("After handling TestRequest", TestLoggingBehavior<TestRequest, string>.Logs);
-        
+
         // Verify performance behavior executed
         Assert.Single(TestPerformanceBehavior<TestRequest, string>.PerformanceLogs);
         Assert.Contains("TestRequest took", TestPerformanceBehavior<TestRequest, string>.PerformanceLogs[0]);
@@ -152,7 +152,7 @@ public class PipelineBehaviorTests
         services.AddLogging(builder => builder.AddConsole());
         services.AddScoped<IMediator, Mediator>();
         services.AddScoped<IRequestHandler<TestVoidRequest>, TestVoidRequestHandler>();
-        services.AddScoped<IPipelineBehavior<TestVoidRequest, EssentialMediator.Abstractions.Mediation.Unit>, 
+        services.AddScoped<IPipelineBehavior<TestVoidRequest, EssentialMediator.Abstractions.Mediation.Unit>,
             TestLoggingBehavior<TestVoidRequest, EssentialMediator.Abstractions.Mediation.Unit>>();
 
         var serviceProvider = services.BuildServiceProvider();
@@ -164,9 +164,9 @@ public class PipelineBehaviorTests
 
         // Assert
         Assert.Equal(EssentialMediator.Abstractions.Mediation.Unit.Value, result);
-        Assert.Contains("Before handling TestVoidRequest", 
+        Assert.Contains("Before handling TestVoidRequest",
             TestLoggingBehavior<TestVoidRequest, EssentialMediator.Abstractions.Mediation.Unit>.Logs);
-        Assert.Contains("After handling TestVoidRequest", 
+        Assert.Contains("After handling TestVoidRequest",
             TestLoggingBehavior<TestVoidRequest, EssentialMediator.Abstractions.Mediation.Unit>.Logs);
     }
 

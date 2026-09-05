@@ -34,13 +34,13 @@ public class UsersController : ControllerBase
         [FromQuery] string? searchTerm = null,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("GET /api/users - isActive: {IsActive}, searchTerm: {SearchTerm}", 
+        _logger.LogInformation("GET /api/users - isActive: {IsActive}, searchTerm: {SearchTerm}",
             isActive, searchTerm);
 
-        var query = new GetAllUsersQuery 
-        { 
-            IsActive = isActive, 
-            SearchTerm = searchTerm 
+        var query = new GetAllUsersQuery
+        {
+            IsActive = isActive,
+            SearchTerm = searchTerm
         };
 
         var users = await _mediator.Send(query, cancellationToken);
@@ -211,7 +211,7 @@ public class UsersController : ControllerBase
             features = new[]
             {
                 "✅ Request/Response Pattern",
-                "✅ Command Pattern", 
+                "✅ Command Pattern",
                 "✅ Query Pattern",
                 "✅ Notification Pattern",
                 "✅ Pipeline Behaviors (Logging, Performance, Validation)",
