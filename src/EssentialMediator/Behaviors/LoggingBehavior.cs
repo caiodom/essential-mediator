@@ -6,20 +6,25 @@ using Microsoft.Extensions.Logging;
 namespace EssentialMediator.Behaviors;
 
 /// <summary>
-/// Logging behavior that logs request handling
+/// Logging behavior that logs request handling.
 /// </summary>
-/// <typeparam name="TRequest">Request type</typeparam>
-/// <typeparam name="TResponse">Response type</typeparam>
+/// <typeparam name="TRequest">Request type.</typeparam>
+/// <typeparam name="TResponse">Response type.</typeparam>
 public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
 {
     private readonly ILogger<LoggingBehavior<TRequest, TResponse>> _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="LoggingBehavior{TRequest, TResponse}"/> class.
+    /// </summary>
+    /// <param name="logger">Logger used to record request execution.</param>
     public LoggingBehavior(ILogger<LoggingBehavior<TRequest, TResponse>> logger)
     {
         _logger = logger;
     }
 
+    /// <inheritdoc />
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
         var requestName = typeof(TRequest).Name;

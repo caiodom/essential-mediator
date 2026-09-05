@@ -7,6 +7,8 @@ using EssentialMediator.Tests.Models.Requests;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
+#pragma warning disable CS0618 // These tests intentionally verify backward compatibility of the obsolete shared-lifetime API.
+
 namespace EssentialMediator.Tests;
 
 public class ServiceCollectionExtensionsTests
@@ -94,7 +96,7 @@ public class ServiceCollectionExtensionsTests
         services.AddLogging();
 
         // Act & Assert
-        var exception = Assert.Throws<ArgumentException>(() => 
+        var exception = Assert.Throws<ArgumentException>(() =>
             services.AddPipelineBehavior(typeof(string))); // string doesn't implement IPipelineBehavior
 
         Assert.Contains("does not implement IPipelineBehavior", exception.Message);
@@ -166,7 +168,7 @@ public class ServiceCollectionExtensionsTests
         // Assert
         var behaviors = serviceProvider.GetServices<IPipelineBehavior<TestRequest, string>>();
         Assert.NotEmpty(behaviors);
-        
+
         // Should have multiple behaviors registered
         Assert.True(behaviors.Count() >= 3); // Logging, Performance, Validation
     }
@@ -187,7 +189,7 @@ public class ServiceCollectionExtensionsTests
 
         // Assert
         Assert.Same(services, result); // Should return the same IServiceCollection for chaining
-        
+
         var serviceProvider = services.BuildServiceProvider();
         var mediator = serviceProvider.GetService<IMediator>();
         Assert.NotNull(mediator);
@@ -242,7 +244,7 @@ public class ServiceCollectionExtensionsTests
         var services = new ServiceCollection();
 
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => 
+        Assert.Throws<ArgumentNullException>(() =>
             services.AddEssentialMediator((Action<EssentialMediator.Extensions.DependencyInjection.Configuration.MediatorConfiguration>)null!));
     }
 
@@ -324,3 +326,5 @@ public class ServiceCollectionExtensionsTests
         Assert.NotSame(mediator1, mediator3); // Different across scopes
     }
 }
+
+#pragma warning restore CS0618

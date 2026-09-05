@@ -4,14 +4,18 @@ on:
   pull_request:
     branches: [ main, develop ]
   push:
-    branches: [ main ]  # Only run on main for direct pushes
+    branches: [ main ]
+
+permissions:
+  contents: read
 
 jobs:
-  build-and-test:
+  build-test-and-pack:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout
+      uses: actions/checkout@v4
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
@@ -19,10 +23,51 @@ jobs:
         dotnet-version: 10.0.x
 
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore EssentialMediator.sln
 
-    - name: Build
-      run: dotnet build --no-restore --configuration Release
+    - name: Build with warnings as errors
+      run: dotnet build EssentialMediator.sln --no-restore --configuration Release --warnaserror
 
-    - name: Test
-      run: dotnet test --no-build --configuration Release --verbosity normal
+    - name: Test with coverage
+      run: >-
+        dotnet test tests/EssentialMediator.Tests/EssentialMediator.Tests.csproj
+        --no-build
+        --configuration Release
+        --verbosity normal
+        --collect:"XPlat Code Coverage"
+        --results-directory ./TestResults
+
+    - name: Pack EssentialMediator.Abstractions
+      run: >-
+        dotnet pack src/EssentialMediator.Abstractions/EssentialMediator.Abstractions.csproj
+        --no-build
+        --configuration Release
+        --output ./artifacts/packages
+
+    - name: Pack EssentialMediator
+      run: >-
+        dotnet pack src/EssentialMediator/EssentialMediator.csproj
+        --no-build
+        --configuration Release
+        --output ./artifacts/packages
+
+    - name: Pack EssentialMediator.Extensions.DependencyInjection
+      run: >-
+        dotnet pack src/EssentialMediator.Extensions.DependencyInjection/EssentialMediator.Extensions.DependencyInjection.csproj
+        --no-build
+        --configuration Release
+        --output ./artifacts/packages
+
+    - name: Upload coverage results
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-results
+        path: TestResults/**/coverage.cobertura.xml
+        if-no-files-found: error
+
+    - name: Upload NuGet packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: artifacts/packages/*.nupkg
+        if-no-files-found: error

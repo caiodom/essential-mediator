@@ -2,6 +2,8 @@ using EssentialMediator.Extensions.DependencyInjection.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
+#pragma warning disable CS0618 // These tests intentionally verify backward compatibility of the obsolete shared-lifetime API.
+
 namespace EssentialMediator.Tests;
 
 public class MediatorConfigurationTests
@@ -152,3 +154,5 @@ public class MediatorConfigurationTests
         Assert.Equal(ServiceLifetime.Transient, config.ServiceLifetime);
     }
 }
+
+#pragma warning restore CS0618
